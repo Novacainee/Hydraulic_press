@@ -1,4 +1,4 @@
-// Main Application Controller & UI Interaction Glue for 4 Tabs
+// Main Application Controller & UI Glue for the 4 Educational Tabs
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const bannerTitle = document.getElementById('bannerTitle');
   const bannerDesc = document.getElementById('bannerDesc');
   const obsActionRow = document.getElementById('observationActionRow');
+
+  const toolbars = {
+    observation: document.getElementById('toolbar-observation'),
+    practice: document.getElementById('toolbar-practice'),
+    conclusion: document.getElementById('toolbar-conclusion'),
+    application: document.getElementById('toolbar-application')
+  };
 
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -34,33 +41,39 @@ document.addEventListener('DOMContentLoaded', () => {
         activePanel.classList.add('active', 'animate-fadeIn');
       }
 
-      // Update simulation mode and top banner
+      // Update adaptive bottom toolbar
+      Object.keys(toolbars).forEach(k => {
+        if (toolbars[k]) {
+          if (k === target) toolbars[k].classList.remove('hidden');
+          else toolbars[k].classList.add('hidden');
+        }
+      });
+
+      // ALWAYS reset all weights back to rack when switching tabs!
       if (window.sim) {
+        window.sim.returnAllToRack();
         window.sim.currentTab = target;
 
         if (target === 'observation') {
           if (bannerBadge) bannerBadge.textContent = '1';
           if (bannerTitle) bannerTitle.textContent = 'Mục 1: Quan Sát Thí Nghiệm Truyền Áp Suất Chất Lỏng';
-          if (bannerDesc) bannerDesc.textContent = 'Xem cấu tạo các dụng cụ thí nghiệm ở bảng bên phải. Bấm nút "Chạy mẫu" để quan sát hệ thống tự động đặt 4 quả cân bên trái và 2 quả cân bên phải.';
+          if (bannerDesc) bannerDesc.textContent = 'Học sinh quan sát các dụng cụ ở bảng bên phải. Bấm nút "Chạy mẫu" để quan sát hệ thống tự động đặt 4 quả cân bên trái và 2 quả cân bên phải.';
           if (obsActionRow) obsActionRow.classList.remove('hidden');
-          window.sim.carLiftActive = false;
         } else if (target === 'practice') {
           if (bannerBadge) bannerBadge.textContent = '2';
           if (bannerTitle) bannerTitle.textContent = 'Mục 2: Học Sinh Tự Thực Hành Thí Nghiệm & Ghi Số Liệu';
-          if (bannerDesc) bannerDesc.textContent = 'Dùng nút [+] / [-] ở khay quả cân (hoặc kéo thả) để thay đổi số quả cân. Bấm "Ghi số liệu" để ghi lại kết quả vào bảng đo.';
+          if (bannerDesc) bannerDesc.textContent = 'Dùng nút [+] / [-] ở thanh bên dưới (hoặc kéo thả từ khay) để thay đổi quả cân. Bấm "Ghi số liệu" để lưu kết quả vào bảng.';
           if (obsActionRow) obsActionRow.classList.add('hidden');
-          window.sim.carLiftActive = false;
         } else if (target === 'conclusion') {
           if (bannerBadge) bannerBadge.textContent = '3';
           if (bannerTitle) bannerTitle.textContent = 'Mục 3: Trả Lời Câu Hỏi Củng Cố & Mở Khóa Kết Luận';
           if (bannerDesc) bannerDesc.textContent = 'Trả lời 5 câu hỏi trắc nghiệm bên phải để kiểm tra độ hiểu bài và mở khóa nội dung Kết luận định luật Pascal!';
           if (obsActionRow) obsActionRow.classList.add('hidden');
-          window.sim.carLiftActive = false;
           if (window.quiz) window.quiz.init();
         } else if (target === 'application') {
           if (bannerBadge) bannerBadge.textContent = '4';
-          if (bannerTitle) bannerTitle.textContent = 'Mục 4: Ứng Dụng Thực Tế - Máy Nâng Ô Tô Thủy Lực';
-          if (bannerDesc) bannerDesc.textContent = 'Bấm nút "BƠM KÍCH NÂNG XE" bên phải để xem người thợ dùng lực nhỏ bơm chất lỏng nâng bổng ô tô 1.5 tấn!';
+          if (bannerTitle) bannerTitle.textContent = 'Mục 4: Ứng Dụng Thực Tế - Trạm Kích Nâng Ô Tô Thủy Lực';
+          if (bannerDesc) bannerDesc.textContent = 'Bấm nút "BƠM KÍCH NÂNG XE" (hoặc click vào cần gạt trên hình) để xem người thợ dùng lực nhỏ bơm chất lỏng nâng bổng ô tô 1.5 tấn!';
           if (obsActionRow) obsActionRow.classList.add('hidden');
           window.sim.loadCarLiftMode();
         }
