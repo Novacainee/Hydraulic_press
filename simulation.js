@@ -1,56 +1,50 @@
-// Simulation Physics & Canvas 2D Engine for Pascal Law & Hydraulic Press
-// Supports: Tab 1 (Observation locked), Tab 2 (Practice), Tab 3 (Conclusion), Tab 4 (Animated Car Lift)
+// Simulation Physics & Canvas 2D Engine (Bright STEM Theme, Drag & Drop Only)
 
 class HydraulicSimulation {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
 
-    // Current tab mode: 'observation', 'practice', 'conclusion', 'application'
-    this.currentTab = 'observation';
+    // Current tab: 'practice' (default) or 'application'
+    this.currentTab = 'practice';
 
     // Physical parameters
     this.ratio = 2.0; // S1 / S2
     this.baseArea2 = 10; // cm^2
-    this.area1 = 20; // cm^2 (Piston 1)
-    this.area2 = 10; // cm^2 (Piston 2)
+    this.area1 = 20; // cm^2
+    this.area2 = 10; // cm^2
 
-    // Weights configuration: exactly 6 weights total in system, each 10 N
+    // Weights: exactly 6 weights total in system, each 10 N
     this.totalWeights = 6;
     this.weightVal = 10; // 10 N per weight
     this.weights1 = 0;
     this.weights2 = 0;
 
-    // Displacements from reference equilibrium 0 (in virtual cm)
+    // Displacements (virtual cm)
     this.h1 = 0;
     this.h2 = 0;
     this.targetH1 = 0;
     this.targetH2 = 0;
     this.velocityH1 = 0;
 
-    // Fluid properties
-    this.fluidType = 'water'; // water
-
     // Visual options
     this.showVectors = true;
     this.showParticles = true;
     this.showRuler = true;
 
-    // Particles for fluid flow visualization
+    // Particles for fluid flow
     this.particles = [];
     this.initParticles(35);
 
-    // ==========================================
-    // CAR LIFT APPLICATION STATE
-    // ==========================================
+    // Car Lift Mode Specifics
     this.carWeight = 15000; // 15,000 N (1.5 tons)
     this.carLiftHeight = 0; // Virtual meters (0.0 to 2.0m)
     this.carLiftPxl = 0; // Current animated pixel lift
-    this.targetCarLiftPxl = 0; // Target pixel lift
-    this.leverPressAnim = 0; // 1.0 when lever is pressed, decays to 0
+    this.targetCarLiftPxl = 0;
+    this.leverPressAnim = 0;
 
     // Drag and Drop State
-    this.draggedFrom = null;
+    this.draggedFrom = null; // 'rack', 'piston1', 'piston2'
     this.isDragging = false;
     this.mousePos = { x: 0, y: 0 };
     this.hoverTarget = null; // 1, 2, 'rack', 'pumpLever'
@@ -71,7 +65,6 @@ class HydraulicSimulation {
     this.startLoop();
   }
 
-  // Total remaining weights currently resting in the rack
   get rackWeights() {
     return Math.max(0, this.totalWeights - this.weights1 - this.weights2);
   }
@@ -84,7 +77,7 @@ class HydraulicSimulation {
         crossOffset: (Math.random() - 0.5) * 0.7,
         speed: (Math.random() * 0.4 + 0.8),
         size: Math.random() * 2 + 1.5,
-        opacity: Math.random() * 0.4 + 0.3
+        opacity: Math.random() * 0.45 + 0.35
       });
     }
   }
@@ -125,9 +118,9 @@ class HydraulicSimulation {
     const cx1 = w * 0.38 - spacing * 0.5;
     const cx2 = w * 0.38 + spacing * 0.5;
 
-    // Weight Rack position
+    // Weight Rack on the lab bench
     const rackW = Math.min(180, w * 0.26);
-    const rackH = 46;
+    const rackH = 48;
     const rackX = Math.min(w - rackW - 16, cx2 + width2 * 0.5 + 45);
     const rackY = bottomY - rackH + 12;
 
@@ -175,21 +168,14 @@ class HydraulicSimulation {
 
   // Add 1 weight to piston from rack
   addWeightToPiston(pistonId) {
-    // Locked in observation or application mode
-    if (this.currentTab === 'observation' || this.currentTab === 'application') {
-      return;
-    }
-
+    if (this.currentTab === 'application') return;
     if (this.rackWeights <= 0) {
       if (window.sound) window.sound.playClick();
       return;
     }
 
-    if (pistonId === 1) {
-      this.weights1++;
-    } else {
-      this.weights2++;
-    }
+    if (pistonId === 1) this.weights1++;
+    else this.weights2++;
 
     if (window.sound) window.sound.playClink();
     this.calculatePhysics();
@@ -198,10 +184,7 @@ class HydraulicSimulation {
 
   // Remove 1 weight from piston back to rack
   removeWeightFromPiston(pistonId) {
-    if (this.currentTab === 'observation' || this.currentTab === 'application') {
-      return;
-    }
-
+    if (this.currentTab === 'application') return;
     if (pistonId === 1) {
       if (this.weights1 > 0) {
         this.weights1--;
@@ -228,6 +211,7 @@ class HydraulicSimulation {
     this.carLiftHeight = 0;
     this.targetCarLiftPxl = 0;
     this.carLiftPxl = 0;
+    if (window.sound) window.sound.playClick();
     this.calculatePhysics();
     this.updateTelemetry();
   }
@@ -248,24 +232,18 @@ class HydraulicSimulation {
   }
 
   // -------------------------------------------------------------
-  // RUN SAMPLE DEMO (Chạy mẫu: 4 quả bên trái, 2 quả bên phải)
+  // RUN SAMPLE DEMO (Chạy mẫu)
   // -------------------------------------------------------------
   runSampleDemo() {
     this.clearDemoTimeouts();
     this.isDemoRunning = true;
     this.setRatio(2.0);
 
-    const bannerTitle = document.getElementById('bannerTitle');
-    const bannerDesc = document.getElementById('bannerDesc');
-
     // Step 0: Reset
     this.weights1 = 0;
     this.weights2 = 0;
     this.calculatePhysics();
     this.updateTelemetry();
-
-    if (bannerTitle) bannerTitle.textContent = "Đang chạy mẫu... Bước 1: Tự động đặt 4 quả cân (40N) lên Pít-tông (1)";
-    if (bannerDesc) bannerDesc.textContent = "Áp suất mặt chất lỏng ở nhánh (1) tăng lên (p₁ = 2.0 kPa), truyền nguyên vẹn theo mọi hướng đẩy pít-tông (2) dâng lên cao!";
 
     // Step 1: Place 4 weights on Piston 1
     const t1 = setTimeout(() => {
@@ -279,9 +257,6 @@ class HydraulicSimulation {
 
     // Step 2: After 2.5 seconds, place 2 weights on Piston 2 to balance
     const t2 = setTimeout(() => {
-      if (bannerTitle) bannerTitle.textContent = "Bước 2: Đặt tiếp 2 quả cân (20N) lên Pít-tông (2) để thiết lập cân bằng";
-      if (bannerDesc) bannerDesc.textContent = "Áp suất ở hai nhánh bằng nhau (p₁ = p₂ = 2.0 kPa). Hai pít-tông từ từ trở về vị trí cân bằng ngang vạch số 0 ban đầu!";
-
       this.weights2 = 2;
       if (window.sound) window.sound.playClink();
       this.calculatePhysics();
@@ -292,7 +267,7 @@ class HydraulicSimulation {
   }
 
   // -------------------------------------------------------------
-  // CAR LIFT APPLICATION CONTROLS (Ứng dụng thực tế)
+  // CAR LIFT APPLICATION CONTROLS
   // -------------------------------------------------------------
   loadCarLiftMode() {
     this.currentTab = 'application';
@@ -306,12 +281,10 @@ class HydraulicSimulation {
   }
 
   pumpCarLift() {
-    // Each pump stroke lifts car by 0.4m (max 2.0m)
     if (this.carLiftHeight < 2.0) {
       this.carLiftHeight = Math.min(2.0, parseFloat((this.carLiftHeight + 0.4).toFixed(1)));
-      // Lift distance: 0.4m ~ 20 pixels
       this.targetCarLiftPxl = this.carLiftHeight * 45;
-      this.leverPressAnim = 1.0; // Trigger lever down animation
+      this.leverPressAnim = 1.0;
 
       if (window.sound) {
         window.sound.playClink();
@@ -365,18 +338,14 @@ class HydraulicSimulation {
 
   updatePhysics(dt) {
     if (this.currentTab === 'application') {
-      // Smooth interpolation for car lift height
       const speed = 6.0;
       this.carLiftPxl += (this.targetCarLiftPxl - this.carLiftPxl) * speed * dt;
-
-      // Lever return animation
       if (this.leverPressAnim > 0) {
         this.leverPressAnim = Math.max(0, this.leverPressAnim - dt * 3.5);
       }
       return;
     }
 
-    // Normal laboratory U-tube physics
     const k = 10.0;
     const damping = 0.72;
 
@@ -437,8 +406,6 @@ class HydraulicSimulation {
     const labelP2Title = document.getElementById('labelP2Title');
     const ratioSummary = document.getElementById('liveRatioSummary');
     const rackCountBadge = document.getElementById('remainingRackCountBadge');
-    const rackW1 = document.getElementById('rackW1Count');
-    const rackW2 = document.getElementById('rackW2Count');
     const carHeightBadge = document.getElementById('carHeightBadge');
     const statusPill = document.getElementById('statusPill');
     const statusText = document.getElementById('statusText');
@@ -467,35 +434,33 @@ class HydraulicSimulation {
     }
 
     if (rackCountBadge) {
-      rackCountBadge.textContent = `Còn lại: ${this.rackWeights} / ${this.totalWeights}`;
+      rackCountBadge.textContent = `Khay cân: ${this.rackWeights} / ${this.totalWeights} quả (10N)`;
     }
-    if (rackW1) rackW1.textContent = this.weights1;
-    if (rackW2) rackW2.textContent = this.weights2;
 
     if (carHeightBadge) {
-      carHeightBadge.textContent = `Độ cao nâng: ${this.carLiftHeight.toFixed(1)} m`;
+      carHeightBadge.textContent = `Độ cao: ${this.carLiftHeight.toFixed(1)} m`;
     }
 
-    // Status pill state
+    // Status pill state (Light theme friendly colors)
     if (statusPill && statusText) {
       if (isApp) {
         if (this.carLiftHeight > 0) {
-          statusPill.className = "pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border backdrop-blur shadow-lg transition-all duration-300 bg-amber-500/20 text-amber-300 border-amber-500/40";
-          statusText.textContent = `Trạm nâng: Đang nâng ô tô ở độ cao +${this.carLiftHeight.toFixed(1)} m`;
+          statusPill.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-800 border-amber-300";
+          statusText.textContent = `Đang nâng ô tô ở độ cao +${this.carLiftHeight.toFixed(1)} m (Lực nâng x50)`;
         } else {
-          statusPill.className = "pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border backdrop-blur shadow-lg transition-all duration-300 bg-slate-800 text-slate-300 border-slate-700";
+          statusPill.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-slate-100 text-slate-700 border-slate-300";
           statusText.textContent = "Bệ nâng ở vị trí thấp nhất (Sẵn sàng bơm)";
         }
       } else {
         const deltaP = p1_kPa - p2_kPa;
         if (Math.abs(deltaP) < 0.001) {
-          statusPill.className = "pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border backdrop-blur shadow-lg transition-all duration-300 bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
-          statusText.textContent = "Cân bằng ngang nhau (p₁ = p₂)";
+          statusPill.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-emerald-50 text-emerald-800 border-emerald-300";
+          statusText.textContent = "Cân bằng ngang vạch 0 (p₁ = p₂)";
         } else if (deltaP > 0) {
-          statusPill.className = "pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border backdrop-blur shadow-lg transition-all duration-300 bg-amber-500/20 text-amber-300 border-amber-500/40";
+          statusPill.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-800 border-amber-300";
           statusText.textContent = "Pít-tông 1 chìm xuống, Pít-tông 2 dâng lên (p₁ > p₂)";
         } else {
-          statusPill.className = "pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border backdrop-blur shadow-lg transition-all duration-300 bg-sky-500/20 text-sky-300 border-sky-500/40";
+          statusPill.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-sky-50 text-sky-800 border-sky-300";
           statusText.textContent = "Pít-tông 2 chìm xuống, Pít-tông 1 dâng lên (p₂ > p₁)";
         }
       }
@@ -511,7 +476,7 @@ class HydraulicSimulation {
     const p1 = ((f1 / s1) * 10).toFixed(2);
     const p2 = ((f2 / s2) * 10).toFixed(2);
 
-    let status = "Cân bằng ngang vạch 0";
+    let status = "Cân bằng vạch 0";
     if (f1 / s1 > f2 / s2) status = "Pít-tông (1) hạ, (2) dâng";
     else if (f1 / s1 < f2 / s2) status = "Pít-tông (2) hạ, (1) dâng";
 
@@ -531,11 +496,11 @@ class HydraulicSimulation {
   }
 
   // -------------------------------------------------------------
-  // CANVAS RENDERING
+  // CANVAS RENDERING (Clean Light STEM Theme)
   // -------------------------------------------------------------
   render() {
     const ctx = this.ctx;
-    const { w, h, c1, c2, rack, bottomY, topY, centerY, pipeHeight, scalePxlPerCm } = this.layout;
+    const { w, h, c1, c2, rack, bottomY, centerY, pipeHeight, scalePxlPerCm } = this.layout;
     if (!c1 || !c2) return;
 
     ctx.clearRect(0, 0, w, h);
@@ -546,7 +511,6 @@ class HydraulicSimulation {
     let yFluid1, yFluid2;
 
     if (isApp) {
-      // In Car Lift mode, fluid 1 rises as car is lifted
       yFluid1 = yEquilibrium - this.carLiftPxl * 0.4;
       yFluid2 = yEquilibrium + (this.leverPressAnim * 25);
     } else {
@@ -559,10 +523,10 @@ class HydraulicSimulation {
       yFluid2 = Math.max(minFluidY2, Math.min(maxFluidY2, yEquilibrium + this.h2 * scalePxlPerCm));
     }
 
-    // 1. Lab Floor & Table Bench
+    // 1. Clean Lab Bench (Light polished wood/granite)
     this.drawLaboratoryEnvironment(ctx, w, h, bottomY, c1, c2);
 
-    // 2. On-Canvas Weight Rack (Only in Tab 1, 2, 3)
+    // 2. On-Canvas Weight Rack (Only in Practice mode)
     if (!isApp) {
       this.drawOnCanvasWeightRack(ctx, rack, this.rackWeights);
     }
@@ -571,7 +535,7 @@ class HydraulicSimulation {
     this.drawCylinderGlassBack(ctx, c1);
     this.drawCylinderGlassBack(ctx, c2);
 
-    // 4. Metric Ruler (Only in Tab 1 & 2)
+    // 4. Metric Ruler (Only in Practice mode)
     if (this.showRuler && !isApp) {
       this.drawMetricRuler(ctx, c1, yEquilibrium, scalePxlPerCm);
       this.drawMetricRuler(ctx, c2, yEquilibrium, scalePxlPerCm);
@@ -593,7 +557,7 @@ class HydraulicSimulation {
       this.drawReferenceLine(ctx, c1, c2, yEquilibrium);
     }
 
-    // 8. Pistons / Car Lift Platform
+    // 8. Metallic Pistons / Car Lift Platform
     if (isApp) {
       this.drawHydraulicCarLiftStation(ctx, c1, c2, yFluid1, yFluid2, bottomY);
     } else {
@@ -614,60 +578,62 @@ class HydraulicSimulation {
     }
   }
 
-  // Draw lab bench & glass mounting brackets
+  // Draw light lab bench table
   drawLaboratoryEnvironment(ctx, w, h, bottomY, c1, c2) {
     const benchY = bottomY + 12;
 
     const benchGrad = ctx.createLinearGradient(0, benchY, 0, h);
-    benchGrad.addColorStop(0, '#1e293b');
-    benchGrad.addColorStop(0.15, '#0f172a');
-    benchGrad.addColorStop(1, '#020617');
+    benchGrad.addColorStop(0, '#e2e8f0');
+    benchGrad.addColorStop(0.2, '#cbd5e1');
+    benchGrad.addColorStop(1, '#94a3b8');
 
     ctx.fillStyle = benchGrad;
     ctx.fillRect(0, benchY, w, h - benchY);
 
-    ctx.fillStyle = '#475569';
+    ctx.fillStyle = '#64748b';
     ctx.fillRect(0, benchY - 2, w, 2);
 
-    ctx.fillStyle = '#334155';
+    // Chrome Lab Clamps
+    ctx.fillStyle = '#475569';
     [c1.cx, c2.cx].forEach(cx => {
       ctx.fillRect(cx - 16, bottomY, 32, 12);
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = '#94a3b8';
       ctx.fillRect(cx - 18, bottomY + 10, 36, 2);
     });
   }
 
-  // Draw On-Canvas Weight Rack
+  // Draw On-Canvas Weight Rack (Light Wooden Tray)
   drawOnCanvasWeightRack(ctx, rack, availableCount) {
     const { x, y, width, height } = rack;
-    const isInteractive = (this.currentTab === 'practice');
-    const isHovered = isInteractive && (this.hoverTarget === 'rack');
+    const isHovered = (this.hoverTarget === 'rack');
 
     ctx.save();
+    // Warm light wooden / brushed aluminum tray
     const trayGrad = ctx.createLinearGradient(x, y, x, y + height);
-    trayGrad.addColorStop(0, isHovered ? '#3b82f6' : '#334155');
-    trayGrad.addColorStop(1, '#1e293b');
+    trayGrad.addColorStop(0, isHovered ? '#bae6fd' : '#f1f5f9');
+    trayGrad.addColorStop(1, isHovered ? '#7dd3fc' : '#e2e8f0');
 
     ctx.fillStyle = trayGrad;
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, 8);
     ctx.fill();
 
-    ctx.strokeStyle = isHovered ? '#60a5fa' : '#475569';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isHovered ? '#0284c7' : '#94a3b8';
+    ctx.lineWidth = isHovered ? 2 : 1;
     ctx.stroke();
 
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = '#b45309';
     ctx.font = 'bold 9px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`KHAY QUẢ CÂN (10N): ${availableCount}/${this.totalWeights}`, x + width * 0.5, y + 12);
+    ctx.fillText(`KHAY QUẢ CÂN (10N): ${availableCount}/${this.totalWeights}`, x + width * 0.5, y + 13);
 
     const slotSpacing = (width - 16) / 6;
     for (let i = 0; i < this.totalWeights; i++) {
       const slotX = x + 10 + i * slotSpacing + slotSpacing * 0.5;
       const slotY = y + height - 10;
 
-      ctx.fillStyle = '#0f172a';
+      // Slot recess
+      ctx.fillStyle = '#cbd5e1';
       ctx.beginPath();
       ctx.ellipse(slotX, slotY, 9, 3.5, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -679,13 +645,13 @@ class HydraulicSimulation {
     ctx.restore();
   }
 
-  // Draw Metric Ruler
+  // Draw Metric Ruler (Dark high contrast on light backdrop)
   drawMetricRuler(ctx, c, yEquilibrium, scalePxlPerCm) {
     const rulerX = c.right + 6;
     ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-    ctx.fillStyle = 'rgba(203, 213, 225, 0.85)';
-    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.strokeStyle = '#475569';
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 9px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
 
     ctx.beginPath();
@@ -704,14 +670,14 @@ class HydraulicSimulation {
       ctx.beginPath();
       ctx.moveTo(rulerX, y);
       ctx.lineTo(rulerX + tickLength, y);
-      ctx.strokeStyle = isZero ? '#f59e0b' : 'rgba(148, 163, 184, 0.5)';
+      ctx.strokeStyle = isZero ? '#d97706' : '#64748b';
       ctx.lineWidth = isZero ? 2 : 1;
       ctx.stroke();
 
       if (isMajor || isZero) {
         const disp = -cm;
         const txt = disp === 0 ? '0' : (disp > 0 ? `+${disp}` : `${disp}`);
-        ctx.fillStyle = isZero ? '#fbbf24' : 'rgba(203, 213, 225, 0.7)';
+        ctx.fillStyle = isZero ? '#b45309' : '#334155';
         ctx.fillText(txt, rulerX + tickLength + 3, y + 3);
       }
     }
@@ -722,7 +688,7 @@ class HydraulicSimulation {
   drawReferenceLine(ctx, c1, c2, yEquilibrium) {
     ctx.save();
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+    ctx.strokeStyle = '#d97706';
     ctx.lineWidth = 1.2;
 
     ctx.beginPath();
@@ -730,14 +696,14 @@ class HydraulicSimulation {
     ctx.lineTo(c2.right + 8, yEquilibrium);
     ctx.stroke();
 
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = '10px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('Vạch số 0 (Ban đầu)', c1.left - 12, yEquilibrium + 3);
     ctx.restore();
   }
 
-  // Draw Fluid (Water in Lab, Amber Hydraulic Oil in Car Lift)
+  // Draw Liquid Fluid (Sky Cyan or Amber Oil)
   drawFluid(ctx, c1, c2, y1, y2, bottomY, pipeH, isApp) {
     const pipeTop = bottomY - pipeH;
 
@@ -755,19 +721,18 @@ class HydraulicSimulation {
 
     const grad = ctx.createLinearGradient(0, Math.min(y1, y2), 0, bottomY);
     if (isApp) {
-      // Warm Amber Hydraulic Oil
       grad.addColorStop(0, 'rgba(245, 158, 11, 0.88)');
       grad.addColorStop(1, 'rgba(180, 83, 9, 0.98)');
     } else {
-      // Lab Water
-      grad.addColorStop(0, 'rgba(14, 165, 233, 0.85)');
+      // Vibrant Lab Water Blue
+      grad.addColorStop(0, 'rgba(14, 165, 233, 0.88)');
       grad.addColorStop(1, 'rgba(2, 132, 199, 0.98)');
     }
 
     ctx.fillStyle = grad;
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(c1.left + 2, y1);
@@ -783,7 +748,7 @@ class HydraulicSimulation {
   drawFlowParticles(ctx, c1, c2, y1, y2, bottomY, pipeH) {
     const pipeCenterY = bottomY - pipeH * 0.5;
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
 
     this.particles.forEach(p => {
       let px, py;
@@ -824,8 +789,8 @@ class HydraulicSimulation {
     const arrowLen2 = Math.min(24, baseLen + p2 * 8);
 
     ctx.save();
-    ctx.strokeStyle = '#38bdf8';
-    ctx.fillStyle = '#38bdf8';
+    ctx.strokeStyle = '#0284c7';
+    ctx.fillStyle = '#0284c7';
     ctx.lineWidth = 1.5;
 
     this.drawArrow(ctx, c1.cx - 10, y1 + 18, c1.cx - 10, y1 + 18 - arrowLen1);
@@ -861,14 +826,14 @@ class HydraulicSimulation {
 
   drawCylinderGlassBack(ctx, c) {
     ctx.save();
-    ctx.fillStyle = 'rgba(241, 245, 249, 0.03)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.fillRect(c.left, c.top, c.width, c.bottom - c.top);
     ctx.restore();
   }
 
   drawCylinderGlassFront(ctx, c) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+    ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 2.5;
 
     ctx.beginPath();
@@ -878,15 +843,17 @@ class HydraulicSimulation {
     ctx.lineTo(c.right, c.bottom);
     ctx.stroke();
 
-    ctx.strokeStyle = '#94a3b8';
+    // Top Rim Collar
+    ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2.5;
     ctx.strokeRect(c.left - 3, c.top - 2, c.width + 6, 4);
 
+    // Specular glass shine
     const streakGrad = ctx.createLinearGradient(c.left, 0, c.right, 0);
-    streakGrad.addColorStop(0, 'rgba(255,255,255,0.14)');
-    streakGrad.addColorStop(0.12, 'rgba(255,255,255,0.02)');
+    streakGrad.addColorStop(0, 'rgba(255,255,255,0.4)');
+    streakGrad.addColorStop(0.12, 'rgba(255,255,255,0.05)');
     streakGrad.addColorStop(0.88, 'rgba(255,255,255,0)');
-    streakGrad.addColorStop(0.96, 'rgba(255,255,255,0.12)');
+    streakGrad.addColorStop(0.96, 'rgba(255,255,255,0.3)');
 
     ctx.fillStyle = streakGrad;
     ctx.fillRect(c.left, c.top, c.width, c.bottom - c.top);
@@ -895,7 +862,7 @@ class HydraulicSimulation {
   }
 
   // -------------------------------------------------------------
-  // PISTON ASSEMBLY (Standard Lab Mode)
+  // METALLIC PISTON ASSEMBLY
   // -------------------------------------------------------------
   drawPistonAssembly(ctx, c, yFluid, pistonId, numWeights) {
     const pistonH = 22;
@@ -919,13 +886,9 @@ class HydraulicSimulation {
     ctx.fillRect(c.left + 1, pistonTop, c.width - 2, pistonH);
 
     // Rubber O-Rings
-    ctx.fillStyle = '#090d16';
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(c.left + 1, pistonTop + 4, c.width - 2, 4);
     ctx.fillRect(c.left + 1, pistonTop + 14, c.width - 2, 4);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillRect(c.left + 6, pistonTop + 5, c.width * 0.35, 1.5);
-    ctx.fillRect(c.left + 6, pistonTop + 15, c.width * 0.35, 1.5);
 
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
@@ -944,11 +907,11 @@ class HydraulicSimulation {
     // 3. Tray
     this.drawWeighingTray(ctx, c.cx, trayY, trayW, pistonId);
 
-    // 4. Weights
+    // 4. Weights on Tray
     this.drawWeightsOnTray(ctx, c.cx, trayY - 2, numWeights, trayW);
 
     // Red level indicator arrow on ruler
-    ctx.fillStyle = '#f43f5e';
+    ctx.fillStyle = '#e11d48';
     ctx.beginPath();
     ctx.moveTo(c.right, pistonTop + pistonH * 0.5);
     ctx.lineTo(c.right + 5, pistonTop + pistonH * 0.5 - 3);
@@ -959,25 +922,25 @@ class HydraulicSimulation {
     ctx.restore();
   }
 
+  // Draw Weighing Tray (With hover drop zone highlight)
   drawWeighingTray(ctx, cx, y, width, pistonId) {
-    const isInteractive = (this.currentTab === 'practice');
-    const isHovered = isInteractive && (this.hoverTarget === pistonId);
+    const isHovered = (this.hoverTarget === pistonId);
 
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
     ctx.shadowBlur = 6;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowOffsetY = 2;
 
     const trayGrad = ctx.createLinearGradient(cx - width * 0.5, 0, cx + width * 0.5, 0);
-    if (isHovered) {
+    if (isHovered && this.isDragging) {
       trayGrad.addColorStop(0, '#38bdf8');
-      trayGrad.addColorStop(0.5, '#e0f2fe');
+      trayGrad.addColorStop(0.5, '#bae6fd');
       trayGrad.addColorStop(1, '#0284c7');
     } else {
-      trayGrad.addColorStop(0, '#94a3b8');
+      trayGrad.addColorStop(0, '#cbd5e1');
       trayGrad.addColorStop(0.2, '#f8fafc');
-      trayGrad.addColorStop(0.5, '#cbd5e1');
-      trayGrad.addColorStop(1, '#64748b');
+      trayGrad.addColorStop(0.5, '#e2e8f0');
+      trayGrad.addColorStop(1, '#94a3b8');
     }
 
     ctx.fillStyle = trayGrad;
@@ -992,18 +955,27 @@ class HydraulicSimulation {
     ctx.fill();
 
     ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = isHovered ? '#38bdf8' : '#475569';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = isHovered && this.isDragging ? '#0284c7' : '#64748b';
+    ctx.lineWidth = isHovered && this.isDragging ? 2 : 1;
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    // Piston ID
+    ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`(${pistonId})`, cx, y + 14);
 
+    // If dragging weight and hovered over this tray, show drop prompt!
+    if (this.isDragging && isHovered) {
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 9px "Be Vietnam Pro", sans-serif';
+      ctx.fillText('▼ Thả vào đây', cx, y - 10);
+    }
+
     ctx.restore();
   }
 
+  // Draw 10N Brass weights on tray
   drawWeightsOnTray(ctx, cx, baseY, count, trayWidth) {
     if (count <= 0) return;
 
@@ -1068,18 +1040,18 @@ class HydraulicSimulation {
 
   drawFloatingWeight(ctx, x, y) {
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 6;
     this.drawSingleBrassWeight(ctx, x, y + 8, 22, 18, 3.5);
     ctx.restore();
   }
 
   // -------------------------------------------------------------
-  // REALISTIC HYDRAULIC CAR LIFT STATION (Ứng dụng thực tế)
+  // HYDRAULIC CAR LIFT STATION (Light Theme)
   // -------------------------------------------------------------
   drawHydraulicCarLiftStation(ctx, c1, c2, yFluid1, yFluid2, bottomY) {
-    const liftOffset = this.carLiftPxl; // 0 to 90px
+    const liftOffset = this.carLiftPxl;
 
     // 1. CAR LIFT RAM & PLATFORM (Piston 1)
     const ramTop = yFluid1 - 24 - liftOffset;
@@ -1087,7 +1059,6 @@ class HydraulicSimulation {
 
     ctx.save();
 
-    // Telescopic chrome ram extending upward
     const ramGrad = ctx.createLinearGradient(c1.cx - ramW * 0.5, 0, c1.cx + ramW * 0.5, 0);
     ramGrad.addColorStop(0, '#94a3b8');
     ramGrad.addColorStop(0.3, '#ffffff');
@@ -1097,7 +1068,6 @@ class HydraulicSimulation {
     ctx.fillStyle = ramGrad;
     ctx.fillRect(c1.cx - ramW * 0.5, ramTop, ramW, (bottomY - ramTop));
 
-    // Heavy duty steel vehicle platform
     const platformY = ramTop - 8;
     const platW = Math.max(150, c1.width * 1.8);
     const platLeft = c1.cx - platW * 0.5;
@@ -1105,26 +1075,18 @@ class HydraulicSimulation {
     ctx.fillStyle = '#334155';
     ctx.fillRect(platLeft, platformY, platW, 10);
 
-    // Yellow/Black hazard caution stripes on platform edge
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(platLeft + 2, platformY + 2, platW - 4, 3);
-
-    // Car Wheels Ramps / Stops
-    ctx.fillStyle = '#64748b';
-    ctx.fillRect(platLeft + 15, platformY - 4, 12, 4);
-    ctx.fillRect(platLeft + platW - 27, platformY - 4, 12, 4);
 
     // 2. RED SPORTS CAR SILHOUETTE
     const carX = c1.cx;
     const carY = platformY;
 
-    // Car shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.beginPath();
     ctx.ellipse(carX, carY + 3, platW * 0.4, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Car Body
     ctx.fillStyle = '#ef4444';
     ctx.beginPath();
     ctx.moveTo(carX - 60, carY - 6);
@@ -1138,7 +1100,6 @@ class HydraulicSimulation {
     ctx.closePath();
     ctx.fill();
 
-    // Roof & Windows
     ctx.fillStyle = '#bae6fd';
     ctx.beginPath();
     ctx.moveTo(carX - 22, carY - 22);
@@ -1156,13 +1117,12 @@ class HydraulicSimulation {
     ctx.closePath();
     ctx.fill();
 
-    // Wheels
     const drawWheel = (wx) => {
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
       ctx.arc(wx, carY - 5, 8, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = '#cbd5e1';
       ctx.beginPath();
       ctx.arc(wx, carY - 5, 4, 0, Math.PI * 2);
       ctx.fill();
@@ -1170,49 +1130,44 @@ class HydraulicSimulation {
     drawWheel(carX - 38);
     drawWheel(carX + 38);
 
-    // Car Weight Label
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Ô TÔ TẢI TRỌNG: 15.000 N (1.5 tấn)', carX, carY - 44);
 
-    // Height measurement vertical ruler beside car
+    // Height ruler beside car
     const hrX = platLeft - 18;
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = '#d97706';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(hrX, bottomY);
     ctx.lineTo(hrX, platformY);
     ctx.stroke();
 
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 9px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`${this.carLiftHeight.toFixed(1)}m`, hrX - 4, platformY + 6);
 
-    // 3. MECHANICAL PUMP LEVER & HANDLE (Piston 2)
+    // 3. MECHANICAL PUMP LEVER (Piston 2)
     const p2H = 20;
     const p2Top = yFluid2 - p2H;
     const p2RodW = 8;
     const p2RodH = 65;
     const p2RodTop = p2Top - p2RodH;
 
-    // Small Piston Head
     ctx.fillStyle = '#475569';
     ctx.fillRect(c2.left + 1, p2Top, c2.width - 2, p2H);
 
-    // Piston Rod
-    ctx.fillStyle = '#cbd5e1';
+    ctx.fillStyle = '#94a3b8';
     ctx.fillRect(c2.cx - p2RodW * 0.5, p2RodTop, p2RodW, p2RodH);
 
-    // Pump Pivot Lever / Handle
     const leverPivotX = c2.cx;
     const leverPivotY = p2RodTop;
     const leverLength = 55;
-    // Lever angle pivots downwards when pressed
     const leverAngle = -0.3 + (this.leverPressAnim * 0.55);
 
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = '#d97706';
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -1220,7 +1175,6 @@ class HydraulicSimulation {
     ctx.lineTo(leverPivotX + Math.cos(leverAngle) * leverLength, leverPivotY + Math.sin(leverAngle) * leverLength);
     ctx.stroke();
 
-    // Rubber Grip Handle on end of lever
     const handleEndX = leverPivotX + Math.cos(leverAngle) * leverLength;
     const handleEndY = leverPivotY + Math.sin(leverAngle) * leverLength;
     ctx.fillStyle = '#0f172a';
@@ -1228,16 +1182,15 @@ class HydraulicSimulation {
     ctx.arc(handleEndX, handleEndY, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Technician / Hand Force indicator
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = '#0369a1';
     ctx.font = 'bold 9px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Tay kích: F₂ = 300 N', handleEndX + 8, handleEndY + 4);
+    ctx.fillText('Cần bơm: F₂ = 300 N', handleEndX + 8, handleEndY + 4);
 
     ctx.restore();
   }
 
-  // Draw Pressure Gauges
+  // Draw Pressure Gauges (Light Dial Face)
   drawPressureGauges(ctx, c1, c2, isApp) {
     const s1 = isApp ? 500 : this.area1;
     const s2 = isApp ? 10 : this.area2;
@@ -1260,18 +1213,18 @@ class HydraulicSimulation {
 
     const bezelGrad = ctx.createLinearGradient(gx - r, gy - r, gx + r, gy + r);
     bezelGrad.addColorStop(0, '#f8fafc');
-    bezelGrad.addColorStop(1, '#475569');
+    bezelGrad.addColorStop(1, '#94a3b8');
     ctx.fillStyle = bezelGrad;
     ctx.beginPath();
     ctx.arc(gx, gy, r, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#090d16';
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(gx, gy, r - 3, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 1;
     for (let a = -Math.PI * 0.75; a <= Math.PI * 0.75; a += Math.PI * 0.25) {
       const tx1 = gx + Math.cos(a) * (r - 7);
@@ -1288,19 +1241,19 @@ class HydraulicSimulation {
     const norm = Math.min(1.0, valueKPa / maxKPa);
     const needleAngle = -Math.PI * 0.75 + norm * (Math.PI * 1.5);
 
-    ctx.strokeStyle = '#ef4444';
+    ctx.strokeStyle = '#dc2626';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(gx, gy);
     ctx.lineTo(gx + Math.cos(needleAngle) * (r - 6), gy + Math.sin(needleAngle) * (r - 6));
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
     ctx.arc(gx, gy, 2.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = '#0284c7';
     ctx.font = 'bold 8px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText(`${label}`, gx, gy + r * 0.6);
@@ -1309,7 +1262,7 @@ class HydraulicSimulation {
   }
 
   // -------------------------------------------------------------
-  // INTERACTION HANDLERS (Canvas Drag & Drop, Clicks)
+  // DRAG & DROP INTERACTION HANDLERS (MOUSE & TOUCH)
   // -------------------------------------------------------------
   bindEvents() {
     window.addEventListener('resize', () => this.resize());
@@ -1335,49 +1288,49 @@ class HydraulicSimulation {
         return null;
       }
 
+      // Check Piston 1
       if (pos.x >= c1.left - 20 && pos.x <= c1.right + 20 && pos.y <= c1.bottom) return 1;
+      // Check Piston 2
       if (pos.x >= c2.left - 20 && pos.x <= c2.right + 20 && pos.y <= c2.bottom) return 2;
-      if (rack && pos.x >= rack.x - 5 && pos.x <= rack.x + rack.width + 5 &&
-          pos.y >= rack.y - 5 && pos.y <= rack.y + rack.height + 5) {
+      // Check Weight rack
+      if (rack && pos.x >= rack.x - 8 && pos.x <= rack.x + rack.width + 8 &&
+          pos.y >= rack.y - 8 && pos.y <= rack.y + rack.height + 8) {
         return 'rack';
       }
       return null;
     };
 
-    // Canvas click interactions
+    // Canvas click: In Car Lift mode pumps the handle; in Practice mode clicks on piston weight returns it to rack!
     this.canvas.addEventListener('click', (e) => {
       if (this.isDragging) return;
       const pos = getPos(e);
       const target = checkHoverTarget(pos);
 
-      // In Application mode: clicking on pump lever pumps the lift!
       if (this.currentTab === 'application' && target === 'pumpLever') {
         this.pumpCarLift();
         return;
       }
 
-      // ONLY in Practice mode do clicks add/remove weights
-      if (this.currentTab !== 'practice') return;
-
-      if (target === 1 && this.weights1 > 0) {
-        this.removeWeightFromPiston(1);
-      } else if (target === 2 && this.weights2 > 0) {
-        this.removeWeightFromPiston(2);
-      } else if (target === 'rack' && this.rackWeights > 0) {
-        this.addWeightToPiston(1);
+      if (this.currentTab === 'practice') {
+        // Clicking on a weight on Piston 1 or 2 returns it to rack!
+        if (target === 1 && this.weights1 > 0) {
+          this.removeWeightFromPiston(1);
+        } else if (target === 2 && this.weights2 > 0) {
+          this.removeWeightFromPiston(2);
+        }
       }
     });
 
-    // Mouse drag ONLY in Practice mode
-    this.canvas.addEventListener('mousedown', (e) => {
+    // MOUSE DOWN / TOUCH START
+    const handleStart = (pos) => {
       if (this.currentTab !== 'practice') return;
-
-      const pos = getPos(e);
       const target = checkHoverTarget(pos);
+
       if (target === 'rack' && this.rackWeights > 0) {
         this.isDragging = true;
         this.draggedFrom = 'rack';
         this.mousePos = pos;
+        if (window.sound) window.sound.playClick();
       } else if (target === 1 && this.weights1 > 0) {
         this.isDragging = true;
         this.draggedFrom = 'piston1';
@@ -1393,41 +1346,65 @@ class HydraulicSimulation {
         this.updateTelemetry();
         this.mousePos = pos;
       }
-    });
+    };
 
-    this.canvas.addEventListener('mousemove', (e) => {
-      this.mousePos = getPos(e);
+    // MOUSE MOVE / TOUCH MOVE
+    const handleMove = (pos) => {
+      this.mousePos = pos;
       this.hoverTarget = checkHoverTarget(this.mousePos);
 
-      // Set cursor style
-      if (this.currentTab === 'observation') {
-        this.canvas.style.cursor = 'default';
-      } else if (this.currentTab === 'application') {
-        this.canvas.style.cursor = this.hoverTarget === 'pumpLever' ? 'pointer' : 'default';
-      } else if (this.currentTab === 'practice') {
-        this.canvas.style.cursor = this.hoverTarget ? 'pointer' : 'grab';
-      }
-    });
-
-    window.addEventListener('mouseup', (e) => {
-      if (this.isDragging) {
-        const dropTarget = checkHoverTarget(this.mousePos);
-        if (dropTarget === 1) {
-          this.weights1++;
-          if (window.sound) window.sound.playClink();
-        } else if (dropTarget === 2) {
-          this.weights2++;
-          if (window.sound) window.sound.playClink();
+      if (this.currentTab === 'application') {
+        this.canvas.style.cursor = (this.hoverTarget === 'pumpLever') ? 'pointer' : 'default';
+      } else {
+        if (this.isDragging) {
+          this.canvas.style.cursor = 'grabbing';
         } else {
-          if (window.sound) window.sound.playClick();
+          this.canvas.style.cursor = this.hoverTarget ? 'grab' : 'default';
         }
-
-        this.isDragging = false;
-        this.draggedFrom = null;
-        this.calculatePhysics();
-        this.updateTelemetry();
       }
-    });
+    };
+
+    // MOUSE UP / TOUCH END
+    const handleEnd = () => {
+      if (!this.isDragging) return;
+      const dropTarget = checkHoverTarget(this.mousePos);
+
+      if (dropTarget === 1) {
+        this.weights1++;
+        if (window.sound) window.sound.playClink();
+      } else if (dropTarget === 2) {
+        this.weights2++;
+        if (window.sound) window.sound.playClink();
+      } else {
+        // Dropped outside or back on rack: weight returns to rack!
+        if (window.sound) window.sound.playClick();
+      }
+
+      this.isDragging = false;
+      this.draggedFrom = null;
+      this.calculatePhysics();
+      this.updateTelemetry();
+    };
+
+    // Mouse listeners
+    this.canvas.addEventListener('mousedown', (e) => handleStart(getPos(e)));
+    this.canvas.addEventListener('mousemove', (e) => handleMove(getPos(e)));
+    window.addEventListener('mouseup', () => handleEnd());
+
+    // Touch listeners (Mobile & Interactive Whiteboard support)
+    this.canvas.addEventListener('touchstart', (e) => {
+      const pos = getPos(e);
+      handleStart(pos);
+      if (this.isDragging) e.preventDefault();
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      const pos = getPos(e);
+      handleMove(pos);
+      if (this.isDragging) e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => handleEnd());
   }
 
   startLoop() {
