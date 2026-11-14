@@ -1,4 +1,4 @@
-// Main Application Controller & UI Interaction Glue
+// Main Application Controller & UI Interaction Glue for 4 Tabs
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
@@ -6,10 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lucide.createIcons();
   }
 
-  // 1. Navigation Tab Switching
+  // 1. Navigation Tab Switching (4 Tabs)
   const navTabs = document.querySelectorAll('.nav-tab');
   const tabPanels = document.querySelectorAll('.tab-panel');
-  const sgkBanner = document.getElementById('sgkStepBanner');
+  const bannerBadge = document.getElementById('bannerBadge');
+  const bannerTitle = document.getElementById('bannerTitle');
+  const bannerDesc = document.getElementById('bannerDesc');
+  const obsActionRow = document.getElementById('observationActionRow');
 
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -31,30 +34,38 @@ document.addEventListener('DOMContentLoaded', () => {
         activePanel.classList.add('active', 'animate-fadeIn');
       }
 
-      // Contextual Banner visibility
-      if (sgkBanner) {
-        if (target === 'sgk') {
-          sgkBanner.classList.remove('hidden');
-        } else {
-          sgkBanner.classList.add('hidden');
-        }
-      }
-
-      // Configure Simulation mode
+      // Update simulation mode and top banner
       if (window.sim) {
-        if (target === 'sgk') {
-          window.sim.mode = 'sgk';
-          window.sim.applyScenario('balanced');
-        } else if (target === 'sandbox') {
-          window.sim.mode = 'sandbox';
+        window.sim.currentTab = target;
+
+        if (target === 'observation') {
+          if (bannerBadge) bannerBadge.textContent = '1';
+          if (bannerTitle) bannerTitle.textContent = 'Mục 1: Quan Sát Thí Nghiệm Truyền Áp Suất Chất Lỏng';
+          if (bannerDesc) bannerDesc.textContent = 'Xem cấu tạo các dụng cụ thí nghiệm ở bảng bên phải. Bấm nút "Chạy mẫu" để quan sát hệ thống tự động đặt 4 quả cân bên trái và 2 quả cân bên phải.';
+          if (obsActionRow) obsActionRow.classList.remove('hidden');
           window.sim.carLiftActive = false;
-        } else if (target === 'hydraulic-lift') {
-          window.sim.loadCarLiftDemo();
-        } else if (target === 'quiz') {
+        } else if (target === 'practice') {
+          if (bannerBadge) bannerBadge.textContent = '2';
+          if (bannerTitle) bannerTitle.textContent = 'Mục 2: Học Sinh Tự Thực Hành Thí Nghiệm & Ghi Số Liệu';
+          if (bannerDesc) bannerDesc.textContent = 'Dùng nút [+] / [-] ở khay quả cân (hoặc kéo thả) để thay đổi số quả cân. Bấm "Ghi số liệu" để ghi lại kết quả vào bảng đo.';
+          if (obsActionRow) obsActionRow.classList.add('hidden');
+          window.sim.carLiftActive = false;
+        } else if (target === 'conclusion') {
+          if (bannerBadge) bannerBadge.textContent = '3';
+          if (bannerTitle) bannerTitle.textContent = 'Mục 3: Trả Lời Câu Hỏi Củng Cố & Mở Khóa Kết Luận';
+          if (bannerDesc) bannerDesc.textContent = 'Trả lời 5 câu hỏi trắc nghiệm bên phải để kiểm tra độ hiểu bài và mở khóa nội dung Kết luận định luật Pascal!';
+          if (obsActionRow) obsActionRow.classList.add('hidden');
+          window.sim.carLiftActive = false;
           if (window.quiz) window.quiz.init();
-        } else if (target === 'report') {
-          if (window.reportManager) window.reportManager.render();
+        } else if (target === 'application') {
+          if (bannerBadge) bannerBadge.textContent = '4';
+          if (bannerTitle) bannerTitle.textContent = 'Mục 4: Ứng Dụng Thực Tế - Máy Nâng Ô Tô Thủy Lực';
+          if (bannerDesc) bannerDesc.textContent = 'Bấm nút "BƠM KÍCH NÂNG XE" bên phải để xem người thợ dùng lực nhỏ bơm chất lỏng nâng bổng ô tô 1.5 tấn!';
+          if (obsActionRow) obsActionRow.classList.add('hidden');
+          window.sim.loadCarLiftMode();
         }
+
+        window.sim.calculatePhysics();
         window.sim.updateTelemetry();
       }
 
@@ -84,60 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Theory Guide Modal
-  const guideBtn = document.getElementById('guideBtn');
-  const guideModal = document.getElementById('guideModal');
-  const closeGuideBtn = document.getElementById('closeGuideBtn');
-  const guideGotItBtn = document.getElementById('guideGotItBtn');
-
-  const openModal = () => {
-    if (guideModal) {
-      guideModal.classList.remove('hidden');
-      if (window.sound) window.sound.playClick();
-    }
-  };
-
-  const closeModal = () => {
-    if (guideModal) {
-      guideModal.classList.add('hidden');
-      if (window.sound) window.sound.playClick();
-    }
-  };
-
-  if (guideBtn) guideBtn.addEventListener('click', openModal);
-  if (closeGuideBtn) closeGuideBtn.addEventListener('click', closeModal);
-  if (guideGotItBtn) guideGotItBtn.addEventListener('click', closeModal);
-
-  if (guideModal) {
-    guideModal.addEventListener('click', (e) => {
-      if (e.target === guideModal) closeModal();
-    });
-  }
-
-  // 4. Reset Simulation Button
+  // 3. Global Reset Button
   const resetBtn = document.getElementById('resetSimBtn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (window.sim) {
-        window.sim.clearWeights();
-        window.sim.setRatio(2.0);
-        window.sim.setFluid('water');
-        window.sim.applyScenario('balanced');
-
-        const ratioSlider = document.getElementById('ratioSlider');
-        if (ratioSlider) ratioSlider.value = 2;
-        const ratioDisplay = document.getElementById('ratioDisplay');
-        if (ratioDisplay) ratioDisplay.textContent = '2.0×';
-
-        document.querySelectorAll('.fluid-btn').forEach((b, idx) => {
-          if (idx === 0) b.classList.add('active');
-          else b.classList.remove('active');
-        });
+        window.sim.resetToInitial();
       }
     });
   }
 
-  // 5. Ratio Slider in Sandbox Mode
+  // 4. Ratio Slider in Practice Mode
   const ratioSlider = document.getElementById('ratioSlider');
   const ratioDisplay = document.getElementById('ratioDisplay');
   if (ratioSlider) {
@@ -148,18 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Fluid Type Selection Buttons
-  const fluidButtons = document.querySelectorAll('.fluid-btn');
-  fluidButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      fluidButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const fluid = btn.dataset.fluid;
-      if (window.sim) window.sim.setFluid(fluid);
-    });
-  });
-
-  // 7. Toggle Options (Pressure Vectors, Particles, Ruler)
+  // 5. Toggle Options (Pressure Vectors, Particles, Ruler)
   const toggleVectors = document.getElementById('toggleVectors');
   const toggleParticles = document.getElementById('toggleParticles');
   const toggleRuler = document.getElementById('toggleRuler');
@@ -187,4 +144,3 @@ document.addEventListener('DOMContentLoaded', () => {
     window.quiz.init();
   }
 });
-

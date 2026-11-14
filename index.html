@@ -16,19 +16,15 @@
             brand: {
               50: '#eef8ff',
               100: '#d8eeff',
-              200: '#b9e2fe',
               500: '#0284c7',
               600: '#0369a1',
               700: '#075985',
               800: '#0c4a6e',
               900: '#082f49'
-            },
-            amber: {
-              450: '#f59e0b'
             }
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+            sans: ['"Be Vietnam Pro"', 'system-ui', '-apple-system', 'sans-serif']
           }
         }
       }
@@ -38,17 +34,22 @@
   <!-- Google Fonts & Lucide Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- KaTeX for crisp formula rendering with math fallbacks -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-['Be_Vietnam_Pro',sans-serif] select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-['Be_Vietnam_Pro',sans-serif] select-none">
 
-  <!-- Top Navigation Bar -->
-  <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700/80 sticky top-0 z-40 px-4 py-2.5">
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 py-2.5 shadow-md">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <!-- Title & Branding -->
+      <!-- Logo & Title -->
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-xl">
           <i data-lucide="gauge"></i>
@@ -56,32 +57,26 @@
         <div>
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
-              KHTN 8 • Bài 16
+              KHTN 8 • BÀI 16
             </span>
-            <span class="text-xs text-slate-400 hidden sm:inline">Kết nối tri thức với cuộc sống</span>
+            <span class="text-xs text-slate-400 hidden sm:inline">Bộ sách Kết nối tri thức với cuộc sống</span>
           </div>
-          <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            Áp Suất Chất Lỏng & Máy Nén Thủy Lực
-            <span class="text-xs font-normal text-sky-300 hidden md:inline">(Định luật Pascal)</span>
+          <h1 class="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+            Áp Suất Chất Lỏng & Định Luật Pascal
+            <span class="text-xs font-normal text-sky-300 hidden md:inline">(Máy nén thủy lực)</span>
           </h1>
         </div>
       </div>
 
-      <!-- Action Buttons -->
+      <!-- Action Utilities -->
       <div class="flex items-center gap-2">
         <!-- Sound Toggle -->
-        <button id="soundToggleBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-600 transition" title="Bật/Tắt âm thanh hiệu ứng">
+        <button id="soundToggleBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition" title="Bật/Tắt âm thanh">
           <i data-lucide="volume-2" class="w-4 h-4 text-emerald-400" id="soundIcon"></i>
           <span class="hidden sm:inline" id="soundText">Âm thanh</span>
         </button>
 
-        <!-- Guide Modal Button -->
-        <button id="guideBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-600 transition">
-          <i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i>
-          <span class="hidden sm:inline">Lý thuyết SGK</span>
-        </button>
-
-        <!-- Reset Button -->
+        <!-- Global Reset -->
         <button id="resetSimBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-medium border border-rose-500/30 transition">
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           <span>Đặt lại</span>
@@ -89,27 +84,24 @@
       </div>
     </div>
 
-    <!-- Mode Tabs -->
-    <div class="max-w-7xl mx-auto mt-2.5 pt-2 border-t border-slate-700/50 flex items-center gap-1 overflow-x-auto text-xs font-medium">
-      <button class="nav-tab active flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition" data-tab="sgk">
-        <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i>
-        <span>1. Thí nghiệm SGK (Hình 16.3)</span>
+    <!-- 4 Main Navigation Tabs (Theo đúng 4 mục yêu cầu) -->
+    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto text-xs font-semibold">
+      <button class="nav-tab active flex items-center gap-1.5 px-4 py-2 rounded-xl transition" data-tab="observation">
+        <i data-lucide="eye" class="w-4 h-4 text-sky-400"></i>
+        <span>1. QUAN SÁT</span>
       </button>
-      <button class="nav-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition" data-tab="sandbox">
-        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-        <span>2. Phòng Thí Nghiệm Tự Do</span>
+      <button class="nav-tab flex items-center gap-1.5 px-4 py-2 rounded-xl transition" data-tab="practice">
+        <i data-lucide="flask-conical" class="w-4 h-4 text-indigo-400"></i>
+        <span>2. THỰC HÀNH</span>
       </button>
-      <button class="nav-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition" data-tab="hydraulic-lift">
-        <i data-lucide="car" class="w-3.5 h-3.5"></i>
-        <span>3. Ứng dụng: Máy Nâng Ô Tô</span>
+      <button class="nav-tab flex items-center gap-1.5 px-4 py-2 rounded-xl transition" data-tab="conclusion">
+        <i data-lucide="lightbulb" class="w-4 h-4 text-emerald-400"></i>
+        <span>3. KẾT LUẬN & TRẮC NGHIỆM</span>
+        <span id="conclusionLockBadge" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[10px] border border-amber-500/40">🔒 Đang khóa</span>
       </button>
-      <button class="nav-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition" data-tab="quiz">
-        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-        <span>4. Thử Thách & Luyện Tập</span>
-      </button>
-      <button class="nav-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition" data-tab="report">
-        <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
-        <span>5. Báo Cáo Thực Hành</span>
+      <button class="nav-tab flex items-center gap-1.5 px-4 py-2 rounded-xl transition" data-tab="application">
+        <i data-lucide="car" class="w-4 h-4 text-amber-400"></i>
+        <span>4. ỨNG DỤNG THỰC TẾ</span>
       </button>
     </div>
   </header>
@@ -120,59 +112,55 @@
     <!-- LEFT & CENTER: Simulation Canvas Container (Col 1-8) -->
     <section class="lg:col-span-8 flex flex-col gap-3">
 
-      <!-- SGK Step-by-Step Prompt Banner (Visible in SGK Mode) -->
-      <div id="sgkStepBanner" class="bg-gradient-to-r from-sky-950/80 via-indigo-950/80 to-slate-900 border border-sky-500/40 rounded-xl p-3 shadow-md">
+      <!-- Dynamic Context Banner -->
+      <div id="modeBanner" class="bg-gradient-to-r from-sky-950/80 via-indigo-950/70 to-slate-900 border border-sky-500/40 rounded-xl p-3 shadow-md">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-2.5">
-            <span class="w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5" id="stepNumberBadge">
+            <span class="w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5" id="bannerBadge">
               1
             </span>
             <div>
-              <h3 class="text-sm font-bold text-sky-200" id="stepTitle">
-                Thí nghiệm chuẩn SGK: Tỉ lệ tiết diện S₁ = 2·S₂
+              <h3 class="text-sm font-bold text-sky-200" id="bannerTitle">
+                Mục 1: Quan Sát Thí Nghiệm Truyền Áp Suất Chất Lỏng
               </h3>
-              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed" id="stepDesc">
-                Ban đầu hai pit-tông ở vị trí cân bằng ngang nhau (vạch 0). Hãy quan sát hoặc chọn một kịch bản dưới đây để kiểm chứng định luật truyền áp suất.
+              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed" id="bannerDesc">
+                Xem cấu tạo các dụng cụ thí nghiệm ở bảng bên phải. Bấm nút <strong>"Chạy mẫu"</strong> để xem hệ thống tự động đặt quả cân và chứng minh sự truyền áp suất.
               </p>
             </div>
           </div>
         </div>
 
-        <!-- Quick SGK Buttons -->
-        <div class="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-700/60">
-          <button class="sgk-action-btn px-2.5 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 border border-sky-400/40 text-sky-200 text-xs font-medium transition" onclick="sim.applyScenario('balanced')">
-            ⚖️ Trạng thái ban đầu
+        <!-- Quick Action Buttons for Observation Mode -->
+        <div id="observationActionRow" class="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-700/60">
+          <button id="runSampleBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow transition" onclick="sim.runSampleDemo()">
+            <i data-lucide="play-circle" class="w-4 h-4 text-amber-300"></i>
+            <span>▶️ Chạy mẫu (Tự đặt 4 quả bên trái & 2 quả bên phải)</span>
           </button>
-          <button class="sgk-action-btn px-2.5 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 text-indigo-200 text-xs font-medium transition" onclick="sim.applyScenario('step1_4weights')">
-            1️⃣ Đặt 4 quả lên Pit-tông (1)
-          </button>
-          <button class="sgk-action-btn px-2.5 py-1 rounded bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/40 text-emerald-200 text-xs font-medium transition" onclick="sim.applyScenario('step2_balance4')">
-            2️⃣ Đặt 2 quả lên Pit-tông (2) để cân bằng
-          </button>
-          <button class="sgk-action-btn px-2.5 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-400/40 text-amber-200 text-xs font-medium transition" onclick="sim.applyScenario('step3_2weights')">
-            3️⃣ Đặt 2 quả lên (1) & 1 quả lên (2)
+          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition" onclick="sim.resetToInitial()">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>Đặt lại trạng thái ban đầu</span>
           </button>
         </div>
       </div>
 
       <!-- Main Canvas Card -->
-      <div class="relative bg-slate-800/90 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col flex-1">
+      <div class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col flex-1">
         
         <!-- Canvas Overlay Controls (Top Floating) -->
         <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
           <!-- Fluid & Visual Toggles -->
-          <div class="flex items-center gap-2 pointer-events-auto bg-slate-900/80 backdrop-blur px-2.5 py-1.5 rounded-xl border border-slate-700/80 shadow">
-            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+          <div class="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur px-2.5 py-1.5 rounded-xl border border-slate-700 shadow">
+            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer hover:text-white">
               <input type="checkbox" id="toggleVectors" class="accent-sky-500 rounded" checked>
               <span>Véc-tơ áp suất</span>
             </label>
             <span class="text-slate-600">|</span>
-            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer hover:text-white">
               <input type="checkbox" id="toggleParticles" class="accent-sky-500 rounded" checked>
               <span>Dòng chất lỏng</span>
             </label>
             <span class="text-slate-600">|</span>
-            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer hover:text-white">
               <input type="checkbox" id="toggleRuler" class="accent-sky-500 rounded" checked>
               <span>Thước đo cm</span>
             </label>
@@ -186,40 +174,40 @@
         </div>
 
         <!-- HTML5 Canvas Element -->
-        <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[380px] md:min-h-[460px] flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-850 to-slate-900">
+        <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[420px] md:min-h-[500px] flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
           <canvas id="simCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
-          
-          <!-- Interactive Quick Click Controls over Pistons (Piston 1 and Piston 2) -->
-          <div id="pistonControlsOverlay" class="absolute inset-0 pointer-events-none">
-            <!-- Will be dynamically positioned or aligned with cylinders -->
-          </div>
         </div>
 
-        <!-- Weight Rack (Khay quả nặng dưới chân thí nghiệm) -->
-        <div class="bg-slate-900/90 border-t border-slate-700 p-3 flex flex-wrap items-center justify-between gap-3">
+        <!-- Weight Rack Toolbar at Bottom of Canvas -->
+        <div class="bg-slate-900/95 border-t border-slate-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1">
-              <i data-lucide="package" class="w-4 h-4 text-amber-400"></i>
-              Khay quả nặng (1 N = 100g):
+            <span class="font-bold text-amber-400 flex items-center gap-1">
+              <i data-lucide="box" class="w-4 h-4"></i>
+              Khay quả cân (10 N / quả):
             </span>
-            <span class="text-[11px] text-slate-400 hidden sm:inline">(Kéo thả vào đĩa hoặc bấm dấu + / -)</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono font-bold" id="remainingRackCountBadge">
+              Còn lại: 6 / 6
+            </span>
           </div>
 
-          <!-- Draggable Weights Deck -->
-          <div class="flex items-center gap-2 overflow-x-auto py-1">
-            <div class="weight-chip-draggable flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-b from-amber-400 to-amber-600 text-slate-900 font-bold text-xs shadow hover:scale-105 active:scale-95 transition cursor-grab" draggable="true" data-mass="1" title="Kéo thả vào đĩa pít-tông">
-              <div class="w-2.5 h-2.5 rounded-full bg-amber-200 border border-amber-700"></div>
-              <span>1 Quả (1 N)</span>
+          <!-- Interactive Add/Remove Buttons -->
+          <div class="flex items-center gap-1.5">
+            <div class="flex items-center rounded-lg bg-sky-950/60 border border-sky-500/40 p-0.5">
+              <span class="px-2 font-semibold text-sky-300 text-[11px]">Pít-tông (1):</span>
+              <button class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" onclick="sim.removeWeightFromPiston(1)" title="Bớt 1 quả về khay">-</button>
+              <span class="w-6 text-center font-mono font-bold text-white" id="rackW1Count">0</span>
+              <button class="w-6 h-6 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold" onclick="sim.addWeightToPiston(1)" title="Lấy 1 quả từ khay đặt lên (1)">+</button>
             </div>
-            
-            <button class="px-2.5 py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/40 text-sky-200 text-xs font-medium transition" onclick="sim.addWeight(1, 1)">
-              +1 quả vào Pít-tông (1)
-            </button>
-            <button class="px-2.5 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-medium transition" onclick="sim.addWeight(2, 1)">
-              +1 quả vào Pít-tông (2)
-            </button>
-            <button class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition" onclick="sim.clearWeights()">
-              Xoá tất cả
+
+            <div class="flex items-center rounded-lg bg-emerald-950/60 border border-emerald-500/40 p-0.5">
+              <span class="px-2 font-semibold text-emerald-300 text-[11px]">Pít-tông (2):</span>
+              <button class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" onclick="sim.removeWeightFromPiston(2)" title="Bớt 1 quả về khay">-</button>
+              <span class="w-6 text-center font-mono font-bold text-white" id="rackW2Count">0</span>
+              <button class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold" onclick="sim.addWeightToPiston(2)" title="Lấy 1 quả từ khay đặt lên (2)">+</button>
+            </div>
+
+            <button class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition" onclick="sim.returnAllToRack()">
+              Cất hết về khay
             </button>
           </div>
         </div>
@@ -229,293 +217,329 @@
       <!-- Real-Time Physical Comparison Bar -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
         <!-- P1 info -->
-        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-sky-500/30 flex items-center justify-between">
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-sky-500/30 flex items-center justify-between shadow">
           <div>
-            <div class="text-[11px] text-sky-400 font-semibold">PÍT-TÔNG (1) LỚN</div>
-            <div class="text-sm font-bold text-white mt-0.5"><span id="liveP1">0.00</span> <span class="text-xs text-slate-400">kPa</span></div>
+            <div class="text-[11px] text-sky-400 font-bold uppercase tracking-wider">Pít-tông (1) Lớn</div>
+            <div class="text-sm font-extrabold text-white mt-0.5"><span id="liveP1">0.00</span> <span class="text-xs text-slate-400 font-normal">kPa</span></div>
           </div>
           <div class="text-right">
-            <div class="text-slate-400">Lực F₁ = <span class="font-bold text-white" id="liveF1">0</span> N</div>
-            <div class="text-slate-400">Tiết diện S₁ = <span class="font-bold text-white" id="liveS1">20</span> cm²</div>
+            <div class="text-slate-400">Lực <i>F</i><sub>1</sub> = <span class="font-bold text-white" id="liveF1">0</span> N</div>
+            <div class="text-slate-400">Tiết diện <i>S</i><sub>1</sub> = <span class="font-bold text-white" id="liveS1">20</span> cm²</div>
           </div>
         </div>
 
         <!-- Formula in center -->
-        <div class="p-2.5 rounded-xl bg-gradient-to-r from-sky-950/60 to-emerald-950/60 border border-slate-700 flex flex-col items-center justify-center text-center">
+        <div class="p-2.5 rounded-xl bg-gradient-to-r from-sky-950/60 to-emerald-950/60 border border-slate-800 flex flex-col items-center justify-center text-center shadow">
           <div class="text-[11px] font-bold text-amber-300">ĐỊNH LUẬT PASCAL</div>
           <div class="font-mono text-xs font-bold text-white tracking-wider mt-0.5">
-            p₁ = F₁ / S₁  ↔  p₂ = F₂ / S₂
+            <i>p</i><sub>1</sub> = <i>F</i><sub>1</sub> / <i>S</i><sub>1</sub> &nbsp;↔&nbsp; <i>p</i><sub>2</sub> = <i>F</i><sub>2</sub> / <i>S</i><sub>2</sub>
           </div>
           <div class="text-[10px] text-slate-300 mt-0.5" id="liveRatioSummary">
-            Tỉ lệ diện tích: S₁ = 2.0 × S₂
+            Tỉ lệ diện tích: <i>S</i><sub>1</sub> = 2.0 × <i>S</i><sub>2</sub>
           </div>
         </div>
 
         <!-- P2 info -->
-        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-emerald-500/30 flex items-center justify-between">
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-emerald-500/30 flex items-center justify-between shadow">
           <div>
-            <div class="text-[11px] text-emerald-400 font-semibold">PÍT-TÔNG (2) NHỎ</div>
-            <div class="text-sm font-bold text-white mt-0.5"><span id="liveP2">0.00</span> <span class="text-xs text-slate-400">kPa</span></div>
+            <div class="text-[11px] text-emerald-400 font-bold uppercase tracking-wider">Pít-tông (2) Nhỏ</div>
+            <div class="text-sm font-extrabold text-white mt-0.5"><span id="liveP2">0.00</span> <span class="text-xs text-slate-400 font-normal">kPa</span></div>
           </div>
           <div class="text-right">
-            <div class="text-slate-400">Lực F₂ = <span class="font-bold text-white" id="liveF2">0</span> N</div>
-            <div class="text-slate-400">Tiết diện S₂ = <span class="font-bold text-white" id="liveS2">10</span> cm²</div>
+            <div class="text-slate-400">Lực <i>F</i><sub>2</sub> = <span class="font-bold text-white" id="liveF2">0</span> N</div>
+            <div class="text-slate-400">Tiết diện <i>S</i><sub>2</sub> = <span class="font-bold text-white" id="liveS2">10</span> cm²</div>
           </div>
         </div>
       </div>
 
     </section>
 
-    <!-- RIGHT: Control Panels, Parameters & Dynamic Educational Cards (Col 9-12) -->
+    <!-- RIGHT: Dedicated Tab Panels (Col 9-12) -->
     <aside class="lg:col-span-4 flex flex-col gap-3">
 
-      <!-- Tab Content 1: SGK Explanation & Guide -->
-      <div id="panel-sgk" class="tab-panel active bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-        <div class="flex items-center gap-2 pb-2 border-b border-slate-700 text-sky-400 font-bold text-sm">
-          <i data-lucide="book-marked" class="w-4 h-4"></i>
-          <span>Thí nghiệm 2 - Hình 16.3 SGK</span>
-        </div>
-
-        <!-- Textbook Quote Box -->
-        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs space-y-2 text-slate-300 leading-relaxed">
-          <p class="font-semibold text-amber-300">
-            📖 Nội dung trong Sách Giáo Khoa:
-          </p>
-          <p>
-            • Pit-tông (1) có tiết diện <span class="text-white font-bold">lớn gấp 2 lần</span> tiết diện của pit-tông (2) ($S_1 = 2 \cdot S_2$).
-          </p>
-          <p>
-            • Các quả nặng giống hệt nhau ($P = 1\text{ N}$). Khi đặt lên đĩa sẽ làm tăng áp suất tác dụng lên chất lỏng.
-          </p>
-          <div class="p-2 rounded bg-sky-950/50 border-l-2 border-sky-400 text-sky-100">
-            <strong>Hiện tượng quan sát:</strong><br>
-            - Đặt 4 quả lên (1) $\to$ (2) dịch chuyển lên. Để cân bằng: đặt <span class="font-bold text-amber-300">2 quả</span> lên (2).<br>
-            - Đặt 2 quả lên (1) $\to$ để cân bằng: đặt <span class="font-bold text-amber-300">1 quả</span> lên (2).
+      <!-- ============================================== -->
+      <!-- TAB 1: QUAN SÁT (Observation) -->
+      <!-- ============================================== -->
+      <div id="panel-observation" class="tab-panel active bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 text-sky-400 font-bold text-sm">
+          <div class="flex items-center gap-2">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+            <span>Dụng Cụ Thí Nghiệm (Hình 16.3 SGK)</span>
           </div>
         </div>
 
-        <!-- Interactive Question & Explanation for Student -->
-        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-700/60 text-xs space-y-2">
-          <div class="font-bold text-emerald-400 flex items-center gap-1.5">
-            <i data-lucide="lightbulb" class="w-4 h-4"></i>
-            <span>Câu hỏi tư duy:</span>
-          </div>
-          <p class="text-slate-300">
-            Tại sao diện tích $S_1$ lớn gấp 2 lần $S_2$ thì số quả cân ở (1) cũng phải gấp 2 lần ở (2) thì hệ mới thăng bằng?
-          </p>
-          <button class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sky-300 text-xs font-medium transition text-center" onclick="sim.toggleSGKAnswer()">
-            💡 Xem lời giải thích khoa học
-          </button>
-          <div id="sgkAnswerBox" class="hidden p-2.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs leading-relaxed mt-2 animate-fadeIn">
-            Theo định luật Pascal, áp suất tác dụng lên mặt chất lỏng được truyền nguyên vẹn theo mọi hướng. Để hai mặt chất lỏng thăng bằng thì áp suất ở hai nhánh phải bằng nhau:
-            <div class="text-center font-bold my-1 text-white">
-              $$p_1 = p_2 \iff \frac{F_1}{S_1} = \frac{F_2}{S_2} \iff \frac{F_1}{F_2} = \frac{S_1}{S_2} = 2$$
+        <!-- Apparatus Items List -->
+        <div class="space-y-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</span>
+            <div>
+              <div class="font-bold text-white">Bình thông nhau chữ U bằng thủy tinh:</div>
+              <div class="text-slate-400 mt-0.5">Nhánh (1) có tiết diện <i>S</i><sub>1</sub> = 20 cm², gấp 2 lần nhánh (2) có <i>S</i><sub>2</sub> = 10 cm².</div>
             </div>
-            Do đó, lực ép $F_1$ phải gấp đôi $F_2$, tương ứng số quả cân ở pít-tông (1) phải gấp đôi pít-tông (2)!
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</span>
+            <div>
+              <div class="font-bold text-white">Hai pít-tông kim loại mạ chrome:</div>
+              <div class="text-slate-400 mt-0.5">Vừa khít thành bình, trang bị 2 gioăng cao su O-ring chống rò rỉ, gắn kèm đĩa đặt quả nặng.</div>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">3</span>
+            <div>
+              <div class="font-bold text-white">Khay 6 quả nặng đồng thau:</div>
+              <div class="text-slate-400 mt-0.5">Mỗi quả có trọng lượng đúng <strong class="text-amber-400">10 N</strong> (~1 kg). Khi đặt lên đĩa sẽ tạo áp suất lên mặt chất lỏng.</div>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">4</span>
+            <div>
+              <div class="font-bold text-white">Chất lỏng truyền áp suất (Nước màu):</div>
+              <div class="text-slate-400 mt-0.5">Hầu như không chịu nén, giúp truyền nguyên vẹn áp suất theo mọi hướng.</div>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">5</span>
+            <div>
+              <div class="font-bold text-white">Thước đo vạch & Áp kế đôi:</div>
+              <div class="text-slate-400 mt-0.5">Thước khắc dọc ống để đọc độ dâng/hạ và 2 đồng hồ hiển thị áp suất thực thời (kPa).</div>
+            </div>
           </div>
         </div>
 
-        <!-- Quick Log Measurement Button -->
-        <button class="w-full py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-sky-600/20 transition flex items-center justify-center gap-2" onclick="sim.recordCurrentState()">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
-          <span>Ghi số liệu hiện tại vào Báo Cáo</span>
-        </button>
+        <!-- Demonstration Action Prompt -->
+        <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs space-y-2 mt-1">
+          <div class="font-bold text-indigo-300 flex items-center gap-1.5">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Chức năng chạy mẫu thí nghiệm:</span>
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            Bấm nút dưới đây để xem máy tự động đặt <strong>4 quả cân (40 N)</strong> lên pít-tông lớn (1) và <strong>2 quả cân (20 N)</strong> lên pít-tông nhỏ (2):
+          </p>
+          <button class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2" onclick="sim.runSampleDemo()">
+            <i data-lucide="play-circle" class="w-4 h-4 text-amber-300"></i>
+            <span>▶️ BẮT ĐẦU CHẠY MẪU</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Tab Content 2: Sandbox Controls (Phòng Thí Nghiệm Tự Do) -->
-      <div id="panel-sandbox" class="tab-panel hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-700 text-indigo-400 font-bold text-sm">
+      <!-- ============================================== -->
+      <!-- TAB 2: THỰC HÀNH (Practice & Data Logging) -->
+      <!-- ============================================== -->
+      <div id="panel-practice" class="tab-panel hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 text-indigo-400 font-bold text-sm">
           <div class="flex items-center gap-2">
-            <i data-lucide="sliders" class="w-4 h-4"></i>
-            <span>Tùy Chỉnh Thông Số</span>
+            <i data-lucide="flask-conical" class="w-4 h-4"></i>
+            <span>Học Sinh Thực Hành & Ghi Số Liệu</span>
           </div>
-          <span class="text-[11px] text-slate-400 font-normal">Chế độ Mở Rộng</span>
         </div>
 
-        <!-- Slider: Piston Area Ratio -->
-        <div class="space-y-1.5">
+        <!-- Practice Instructions -->
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5 text-slate-300 leading-relaxed">
+          <p class="font-semibold text-amber-300">📋 Hướng dẫn thực hành:</p>
+          <p>1. Dùng nút <strong>[+]</strong> hoặc <strong>[-]</strong> ở thanh bên dưới (hoặc kéo thả) để thêm bớt quả cân vào 2 pít-tông.</p>
+          <p>2. Quan sát độ dịch chuyển của pít-tông và chỉ số trên 2 áp kế.</p>
+          <p>3. Bấm <strong>"Ghi số liệu"</strong> để lưu lần đo vào bảng kết quả bên dưới.</p>
+        </div>
+
+        <!-- Ratio Slider in Practice -->
+        <div class="space-y-1.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800">
           <div class="flex justify-between text-xs">
-            <span class="text-slate-300 font-medium">Tỉ lệ tiết diện (S₁ / S₂):</span>
+            <span class="text-slate-300 font-medium">Tỉ lệ diện tích (<i>S</i><sub>1</sub> / <i>S</i><sub>2</sub>):</span>
             <span class="font-bold text-indigo-400 font-mono text-sm" id="ratioDisplay">2.0×</span>
           </div>
-          <input type="range" id="ratioSlider" min="1" max="5" step="0.5" value="2" class="w-full accent-indigo-500 bg-slate-700 rounded-lg h-2 cursor-pointer">
+          <input type="range" id="ratioSlider" min="1" max="4" step="0.5" value="2" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 cursor-pointer">
           <div class="flex justify-between text-[10px] text-slate-400">
-            <span>1:1 (Bằng nhau)</span>
-            <span>2:1</span>
+            <span>1:1</span>
+            <span>2:1 (SGK)</span>
             <span>3:1</span>
             <span>4:1</span>
-            <span>5:1 (Gấp 5 lần)</span>
           </div>
         </div>
 
-        <!-- Fluid Type Selector -->
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-slate-300">Loại chất lỏng:</label>
-          <div class="grid grid-cols-3 gap-1.5 text-xs">
-            <button class="fluid-btn active py-1.5 px-2 rounded-lg bg-sky-600/30 border border-sky-400/50 text-sky-200 text-center font-medium" data-fluid="water">
-              💧 Nước
-            </button>
-            <button class="fluid-btn py-1.5 px-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-300 text-center font-medium" data-fluid="oil">
-              🛢️ Dầu thủy lực
-            </button>
-            <button class="fluid-btn py-1.5 px-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-300 text-center font-medium" data-fluid="mercury">
-              🧪 Thủy ngân
-            </button>
-          </div>
-        </div>
-
-        <!-- Mechanical Advantage / Work Tradeoff Inspector -->
-        <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs space-y-2">
-          <div class="font-bold text-amber-400 flex items-center justify-between">
-            <span>Định luật bảo toàn công (A₁ = A₂):</span>
-            <i data-lucide="scale" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="space-y-1 text-slate-300 text-[11px]">
-            <div class="flex justify-between">
-              <span>Độ dịch chuyển Pít-tông 1 (Δh₁):</span>
-              <span class="font-mono font-bold text-white" id="workH1">0.0 cm</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Độ dịch chuyển Pít-tông 2 (Δh₂):</span>
-              <span class="font-mono font-bold text-white" id="workH2">0.0 cm</span>
-            </div>
-            <div class="p-2 rounded bg-amber-950/40 border-l-2 border-amber-500 text-amber-200 text-[11px] mt-1.5">
-              📌 <strong>Quy tắc vàng của cơ học:</strong> "Được lợi bao nhiêu lần về lực thì thiệt bấy nhiêu lần về đường đi!"<br>
-              Khi $S_1 = 2 \cdot S_2$, pít-tông lớn chịu lực gấp 2 lần nhưng chỉ dịch chuyển bằng một nửa quãng đường của pít-tông nhỏ.
-            </div>
-          </div>
-        </div>
-
-        <!-- Custom Weight Inputs -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 flex flex-col gap-1.5">
-            <span class="text-sky-300 font-semibold">Pít-tông (1)</span>
-            <div class="flex items-center justify-between">
-              <button class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" onclick="sim.addWeight(1, -1)">-</button>
-              <span class="font-mono font-bold text-base text-white" id="numWeights1">0</span>
-              <button class="w-7 h-7 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold" onclick="sim.addWeight(1, 1)">+</button>
-            </div>
-          </div>
-          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 flex flex-col gap-1.5">
-            <span class="text-emerald-300 font-semibold">Pít-tông (2)</span>
-            <div class="flex items-center justify-between">
-              <button class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" onclick="sim.addWeight(2, -1)">-</button>
-              <span class="font-mono font-bold text-base text-white" id="numWeights2">0</span>
-              <button class="w-7 h-7 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold" onclick="sim.addWeight(2, 1)">+</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Content 3: Hydraulic Car Lift Application -->
-      <div id="panel-hydraulic-lift" class="tab-panel hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-        <div class="flex items-center gap-2 pb-2 border-b border-slate-700 text-amber-400 font-bold text-sm">
-          <i data-lucide="car" class="w-4 h-4"></i>
-          <span>Ứng Dụng Thực Tế: Máy Nâng Ô Tô</span>
-        </div>
-
-        <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs space-y-2 text-slate-300 leading-relaxed">
-          <p class="font-bold text-white">
-            🚗 Làm thế nào một người có thể nâng bổng chiếc ô tô 1.500 kg?
-          </p>
-          <p>
-            Trong xưởng rửa xe, gara sửa chữa, người ta nối pít-tông nhỏ với cần bơm tay hoặc bàn đạp chân, pít-tông lớn gắn với bệ nâng ô tô.
-          </p>
-          <div class="p-2.5 rounded bg-slate-800 border border-slate-700 text-[11px] space-y-1">
-            <div class="flex justify-between">
-              <span>Trọng lượng ô tô ($P_{xe}$):</span>
-              <span class="font-bold text-rose-400">15.000 N (~1.5 tấn)</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Tiết diện bệ nâng ($S_1$):</span>
-              <span class="font-bold text-white">500 cm²</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Tiết diện pít-tông bơm ($S_2$):</span>
-              <span class="font-bold text-white">10 cm²</span>
-            </div>
-            <div class="pt-1 border-t border-slate-700 flex justify-between text-amber-300 font-bold">
-              <span>Lực người cần tác dụng ($F_2$):</span>
-              <span>300 N (~30 kg)!</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Interactive Demo Button -->
-        <button class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2" onclick="sim.loadCarLiftDemo()">
-          <i data-lucide="play" class="w-4 h-4"></i>
-          <span>Xem mô phỏng nâng ô tô thực tế</span>
+        <!-- Record Measurement Button -->
+        <button class="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-sky-600/20 transition flex items-center justify-center gap-2" onclick="sim.recordCurrentState()">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Ghi Số Liệu Hiện Tại Vào Bảng Đo</span>
         </button>
 
-        <p class="text-[11px] text-slate-400 italic text-center">
-          * Nhờ máy nén thủy lực, lực nâng được phóng đại lên gấp 50 lần!
-        </p>
+        <!-- Measurement Data Table -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <span>Bảng số liệu các lần đo thực nghiệm:</span>
+            <button class="text-rose-400 hover:underline text-[11px]" onclick="reportManager.clearData()">
+              Xoá bảng
+            </button>
+          </div>
+          <div class="overflow-x-auto max-h-52 rounded-xl border border-slate-800 bg-slate-950">
+            <table class="w-full text-[11px] text-left text-slate-300">
+              <thead class="text-[10px] uppercase bg-slate-900 text-slate-400 sticky top-0">
+                <tr>
+                  <th class="p-1.5">Lần</th>
+                  <th class="p-1.5"><i>F</i><sub>1</sub> (N)</th>
+                  <th class="p-1.5"><i>S</i><sub>1</sub></th>
+                  <th class="p-1.5"><i>p</i><sub>1</sub> (kPa)</th>
+                  <th class="p-1.5"><i>F</i><sub>2</sub> (N)</th>
+                  <th class="p-1.5"><i>S</i><sub>2</sub></th>
+                  <th class="p-1.5"><i>p</i><sub>2</sub> (kPa)</th>
+                  <th class="p-1.5">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody">
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-slate-500 italic">
+                    Chưa có số liệu. Bấm "Ghi số liệu" để lưu lần đo!
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition flex items-center justify-center gap-1.5" onclick="window.print()">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>In / Xuất Báo Cáo Thực Hành (PDF)</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Tab Content 4: Interactive Quiz -->
-      <div id="panel-quiz" class="tab-panel hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-700 text-emerald-400 font-bold text-sm">
+      <!-- ============================================== -->
+      <!-- TAB 3: KẾT LUẬN & TRẮC NGHIỆM (Quiz Gated) -->
+      <!-- ============================================== -->
+      <div id="panel-conclusion" class="tab-panel hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 text-emerald-400 font-bold text-sm">
           <div class="flex items-center gap-2">
             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-            <span>Thử Thách & Luyện Tập</span>
+            <span>3. Trả Lời Câu Hỏi & Nhận Kết Luận</span>
           </div>
           <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30" id="quizScoreBadge">
             Điểm: 0/5
           </span>
         </div>
 
+        <!-- 5 Questions Quiz Container -->
         <div id="quizContainer" class="flex flex-col gap-3">
-          <!-- Dynamically injected by quiz.js -->
+          <!-- Injected by quiz.js -->
         </div>
+
+        <!-- Locked / Unlocked Theory Conclusion Box -->
+        <div id="theoryLockContainer" class="mt-2 transition-all duration-500">
+          <!-- Initially Locked Card -->
+          <div id="theoryLockedState" class="p-4 rounded-xl bg-slate-950 border border-dashed border-amber-500/40 text-center space-y-2">
+            <div class="w-10 h-10 mx-auto rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+              🔒
+            </div>
+            <h4 class="font-bold text-amber-300 text-xs uppercase tracking-wider">
+              Nội dung Kết luận & Lý thuyết đang bị khóa
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+              Học sinh cần trả lời xong <strong>5 câu hỏi trắc nghiệm</strong> ở trên để mở khóa phần kết luận tổng kết và định luật Pascal!
+            </p>
+          </div>
+
+          <!-- Unlocked Content (Shown after completing quiz) -->
+          <div id="theoryUnlockedState" class="hidden p-4 rounded-xl bg-gradient-to-b from-emerald-950/40 to-slate-950 border border-emerald-500/50 space-y-3 animate-fadeIn">
+            <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm pb-2 border-b border-emerald-500/30">
+              <span>🎉 KẾT LUẬN & ĐỊNH LUẬT PASCAL (ĐÃ MỞ KHÓA)</span>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-200 leading-relaxed">
+              <div class="p-2.5 rounded-lg bg-slate-900 border-l-4 border-emerald-400">
+                <h5 class="font-bold text-emerald-300 mb-0.5">1. Định luật truyền áp suất chất lỏng (Pascal):</h5>
+                <p>
+                  "<strong>Áp suất tác dụng vào chất lỏng được truyền nguyên vẹn theo mọi hướng.</strong>"
+                </p>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-slate-900 border-l-4 border-sky-400">
+                <h5 class="font-bold text-sky-300 mb-0.5">2. Nguyên lý máy nén thủy lực:</h5>
+                <p>
+                  Khi tác dụng một lực <i>F</i><sub>2</sub> lên pít-tông nhỏ diện tích <i>S</i><sub>2</sub>, áp suất <i>p</i><sub>2</sub> = <i>F</i><sub>2</sub> / <i>S</i><sub>2</sub> được chất lỏng truyền nguyên vẹn tới pít-tông lớn <i>S</i><sub>1</sub>:
+                </p>
+                <div class="text-center font-bold text-white my-1.5 p-2 bg-slate-800 rounded font-mono text-sm">
+                  <i>F</i><sub>1</sub> / <i>F</i><sub>2</sub> = <i>S</i><sub>1</sub> / <i>S</i><sub>2</sub>
+                </div>
+                <p class="text-amber-300">
+                  👉 <strong>Kết luận:</strong> Diện tích pít-tông lớn gấp bao nhiêu lần pít-tông nhỏ thì lực nâng lớn gấp bấy nhiêu lần lực tác dụng!
+                </p>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-slate-900 border-l-4 border-amber-400">
+                <h5 class="font-bold text-amber-300 mb-0.5">3. Định luật bảo toàn công:</h5>
+                <p>
+                  "Được lợi bao nhiêu lần về lực thì thiệt bấy nhiêu lần về đường đi!"
+                </p>
+                <div class="text-center font-bold text-white my-1 font-mono text-xs">
+                  <i>F</i><sub>1</sub> · <i>h</i><sub>1</sub> = <i>F</i><sub>2</sub> · <i>h</i><sub>2</sub> &nbsp;⇔&nbsp; <i>A</i><sub>1</sub> = <i>A</i><sub>2</sub>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Tab Content 5: Lab Measurement Report -->
-      <div id="panel-report" class="tab-panel hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-700 text-cyan-400 font-bold text-sm">
-          <div class="flex items-center gap-2">
-            <i data-lucide="table" class="w-4 h-4"></i>
-            <span>Bảng Số Liệu Đo Lường</span>
+      <!-- ============================================== -->
+      <!-- TAB 4: ỨNG DỤNG THỰC TẾ (Real-World & Car Lift) -->
+      <!-- ============================================== -->
+      <div id="panel-application" class="tab-panel hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center gap-2 pb-2 border-b border-slate-800 text-amber-400 font-bold text-sm">
+          <i data-lucide="car" class="w-4 h-4"></i>
+          <span>4. Ứng Dụng Thực Tế & Mô Phỏng Máy Nâng Ô Tô</span>
+        </div>
+
+        <!-- Real-world Applications Overview -->
+        <div class="space-y-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+            <h5 class="font-bold text-amber-300 flex items-center gap-1.5">
+              <span>🚗 1. Máy nâng ô tô trong xưởng rửa xe, gara:</span>
+            </h5>
+            <p class="text-slate-300 mt-1 leading-relaxed">
+              Trọng lượng ô tô rất lớn (~15.000 N). Nhờ bệ nâng lớn <i>S</i><sub>1</sub> gấp 50 lần pít-tông bơm <i>S</i><sub>2</sub>, người thợ chỉ cần đạp chân lực 300 N (~30 kg) là nâng bổng chiếc ô tô!
+            </p>
           </div>
-          <button class="text-xs text-rose-400 hover:underline" onclick="reportManager.clearData()">
-            Xoá bảng
-          </button>
+
+          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+            <h5 class="font-bold text-sky-300 flex items-center gap-1.5">
+              <span>🛑 2. Hệ thống phanh dầu thủy lực xe máy, ô tô:</span>
+            </h5>
+            <p class="text-slate-300 mt-1 leading-relaxed">
+              Lực bóp nhẹ ở tay phanh tạo áp suất trong đường ống dẫn dầu, truyền nguyên vẹn ép chặt má phanh vào đĩa phanh để dừng bánh xe an toàn.
+            </p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+            <h5 class="font-bold text-emerald-300 flex items-center gap-1.5">
+              <span>📦 3. Máy ép thủy lực công nghiệp:</span>
+            </h5>
+            <p class="text-slate-300 mt-1 leading-relaxed">
+              Dùng để ép phế liệu kim loại, ép nén bã mía, ép dầu thực vật với lực ép lên tới hàng trăm tấn.
+            </p>
+          </div>
         </div>
 
-        <!-- Table Container -->
-        <div class="overflow-x-auto max-h-56 rounded-xl border border-slate-700">
-          <table class="w-full text-[11px] text-left text-slate-300">
-            <thead class="text-[10px] uppercase bg-slate-900/90 text-slate-400 sticky top-0">
-              <tr>
-                <th class="p-1.5">Lần</th>
-                <th class="p-1.5">F₁ (N)</th>
-                <th class="p-1.5">S₁</th>
-                <th class="p-1.5">p₁</th>
-                <th class="p-1.5">F₂ (N)</th>
-                <th class="p-1.5">S₂</th>
-                <th class="p-1.5">p₂</th>
-                <th class="p-1.5">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody id="reportTableBody">
-              <tr>
-                <td colspan="8" class="text-center py-4 text-slate-500 italic">
-                  Chưa có dữ liệu. Bấm "Ghi số liệu" để lưu các lần đo thí nghiệm!
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="grid grid-cols-2 gap-2">
-          <button class="py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs transition flex items-center justify-center gap-1.5" onclick="sim.recordCurrentState()">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Ghi số liệu</span>
-          </button>
-          <button class="py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium text-xs transition flex items-center justify-center gap-1.5" onclick="window.print()">
-            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-            <span>In / Xuất PDF</span>
-          </button>
+        <!-- Interactive Car Lift Demo Controls -->
+        <div class="p-3 rounded-xl bg-gradient-to-b from-amber-950/40 to-slate-950 border border-amber-500/40 text-xs space-y-2 mt-1">
+          <div class="font-bold text-amber-300 flex items-center justify-between">
+            <span>Mô Phỏng Trực Tiếp: Kích Nâng Ô Tô</span>
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Gara Sửa Xe</span>
+          </div>
+          <p class="text-slate-300 leading-relaxed text-[11px]">
+            Bấm nút <strong>"Bơm Kích Thủy Lực"</strong> để tác dụng lực người thợ vào pít-tông nhỏ và quan sát ô tô 1.5 tấn được nâng lên cao:
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-1.5" onclick="sim.pumpCarLift()">
+              <i data-lucide="chevrons-up" class="w-4 h-4"></i>
+              <span>BƠM KÍCH NÂNG XE</span>
+            </button>
+            <button class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-1.5" onclick="sim.resetCarLift()">
+              <i data-lucide="chevrons-down" class="w-4 h-4"></i>
+              <span>Hạ xe xuống</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -523,70 +547,26 @@
 
   </main>
 
-  <!-- Theory Guide Modal -->
-  <div id="guideModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="book-open" class="w-5 h-5 text-sky-400"></i>
-          Lý Thuyết Trọng Tâm: Áp Suất Tác Dụng Vào Chất Lỏng
-        </h3>
-        <button id="closeGuideBtn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
-        <div class="p-3 rounded-xl bg-sky-950/50 border border-sky-500/30">
-          <h4 class="font-bold text-sky-300 text-sm mb-1">1. Định luật truyền áp suất trong chất lỏng (Pascal)</h4>
-          <p>
-            <strong>"Áp suất tác dụng vào chất lỏng được truyền nguyên vẹn theo mọi hướng."</strong>
-          </p>
-          <p class="mt-1 text-slate-400">
-            Chất lỏng hầu như không bị nén. Khi ta tạo một áp suất lên một vùng chất lỏng trong bình kín, áp suất đó lập tức được truyền đều đến tất cả mọi điểm trong lòng chất lỏng và tác dụng vuông góc lên thành bình cũng như các pít-tông.
-          </p>
-        </div>
-
-        <div class="p-3 rounded-xl bg-slate-900 border border-slate-700">
-          <h4 class="font-bold text-amber-300 text-sm mb-1">2. Nguyên lý máy nén thủy lực</h4>
-          <p>
-            Xét hai pít-tông có diện tích đáy lần lượt là $S_1$ và $S_2$.
-          </p>
-          <ul class="list-disc list-inside space-y-1 mt-1 text-slate-300">
-            <li>Lực tác dụng lên pít-tông nhỏ: $F_2$, gây ra áp suất $p_2 = \frac{F_2}{S_2}$.</li>
-            <li>Áp suất này được truyền nguyên vẹn tới pít-tông lớn: $p_1 = p_2$.</li>
-            <li>Lực nâng tạo ra ở pít-tông lớn: $F_1 = p_1 \cdot S_1 = \frac{F_2}{S_2} \cdot S_1$.</li>
-          </ul>
-          <div class="text-center font-bold text-white my-2 p-2 bg-slate-800 rounded-lg">
-            $$\frac{F_1}{F_2} = \frac{S_1}{S_2}$$
-          </div>
-          <p class="text-emerald-400 font-semibold">
-            👉 Kết luận: Diện tích $S_1$ lớn gấp bao nhiêu lần $S_2$ thì lực nâng $F_1$ lớn gấp bấy nhiêu lần lực tác dụng $F_2$.
-          </p>
-        </div>
-
-        <div class="p-3 rounded-xl bg-slate-900 border border-slate-700">
-          <h4 class="font-bold text-indigo-300 text-sm mb-1">3. Thí nghiệm SGK KHTN 8 (Hình 16.3)</h4>
-          <p>
-            Trong thí nghiệm trường học, $S_1 = 2 \cdot S_2$. Khi đặt 4 quả nặng lên đĩa (1), muốn hai pít-tông trở về vị trí cân bằng ngang bằng nhau ban đầu, ta chỉ cần đặt đúng 2 quả nặng lên đĩa (2).
-          </p>
-        </div>
-      </div>
-
-      <div class="pt-3 border-t border-slate-700 flex justify-end">
-        <button id="guideGotItBtn" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition">
-          Đã hiểu, quay lại mô phỏng
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sound Audio Synthesizer & Physics Scripts -->
+  <!-- Script Modules -->
   <script src="audio.js"></script>
   <script src="quiz.js"></script>
   <script src="report.js"></script>
   <script src="simulation.js"></script>
   <script src="app.js"></script>
+
+  <!-- KaTeX auto-render execution on page load -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.renderMathInElement) {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError : false
+        });
+      }
+    });
+  </script>
 </body>
 </html>
-
