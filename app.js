@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.earSim) {
           setTimeout(() => {
             window.earSim.resize();
-            window.earSim.selectPart(1);
+            window.earSim.update3DTransform();
+            window.earSim.selectPart(window.earSim.selectedPartId || 1);
           }, 50);
         }
       }
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (tabName === 'ear-pressure') {
         if (window.earSim) {
+          window.earSim.reset3D();
           window.earSim.setSubMode('anatomy');
           window.earSim.selectPart(1);
           window.earSim.setStage(1);

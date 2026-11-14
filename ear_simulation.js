@@ -1,4 +1,4 @@
-// Interactive Ear Anatomy & Sudden Pressure Change Simulation (KHTN 8)
+// Interactive Ear Anatomy & 3D Pressure Change Simulation (KHTN 8)
 // Models the 3D human ear cutaway, sound transmission, and sudden pressure pop during flight
 
 const EAR_PARTS = [
@@ -6,8 +6,13 @@ const EAR_PARTS = [
     id: 1,
     name: "Vành tai",
     latin: "Auricle / Pinna",
-    xPercent: 17.9,
-    yPercent: 37.6,
+    badgeTitle: "Vành tai",
+    badgeDesc: "Hứng âm thanh",
+    color: "#f59e0b",
+    colorLight: "#fbbf24",
+    xPercent: 19.5,
+    yPercent: 18.5,
+    arrowSide: "right", // arrow starts from badge right edge
     soundOrder: 1,
     role: "Nằm ngoài cùng, hứng sóng âm từ môi trường xung quanh. Hướng âm thanh vào ống tai.",
     details: "Vành tai có cấu tạo sụn đàn hồi với nhiều nếp gấp đặc biệt, hoạt động như một chiếc phễu thu âm thanh tự nhiên giúp ta định hướng nguồn âm trong không gian."
@@ -16,8 +21,13 @@ const EAR_PARTS = [
     id: 2,
     name: "Ống tai",
     latin: "External Auditory Canal",
-    xPercent: 40.6,
-    yPercent: 65.8,
+    badgeTitle: "Ống tai",
+    badgeDesc: "Dẫn âm thanh",
+    color: "#0284c7",
+    colorLight: "#38bdf8",
+    xPercent: 37.5,
+    yPercent: 45.0,
+    arrowSide: "right",
     soundOrder: 2,
     role: "Dẫn sóng âm đến màng nhĩ. Không khí trong ống tai thông với bên ngoài, nên áp suất ở đây bằng áp suất khí quyển bên ngoài.",
     details: "Đường ống dài khoảng 2.5 cm dẫn từ vành tai đến màng nhĩ. Vì thông thẳng ra khí quyển, nên khi máy bay cất cánh hoặc hạ cánh, áp suất trong ống tai biến đổi tức thì theo môi trường bên ngoài."
@@ -26,8 +36,13 @@ const EAR_PARTS = [
     id: 3,
     name: "Màng nhĩ",
     latin: "Tympanic Membrane",
-    xPercent: 46.8,
-    yPercent: 66.5,
+    badgeTitle: "Màng nhĩ",
+    badgeDesc: "Ngăn ống tai và tai giữa",
+    color: "#ec4899",
+    colorLight: "#f472b6",
+    xPercent: 47.0,
+    yPercent: 44.0,
+    arrowSide: "right",
     soundOrder: 3,
     role: "Màng mỏng ngăn cách ống tai với tai giữa, rung động khi có sóng âm. Một mặt chịu áp suất từ ống tai (áp suất ngoài), mặt kia chịu áp suất từ tai giữa. Nếu áp suất hai mặt chênh lệch đột ngột, màng nhĩ bị đẩy về phía có áp suất nhỏ hơn.",
     details: "Màng nhĩ hình nón mỏng trong suốt, cực kỳ nhạy cảm với dao động sóng âm. Khi áp suất hai bên mất cân bằng (ví dụ ngoài 101 kPa, trong 80 kPa), màng nhĩ bị căng phồng hoặc lõm sâu gây cảm giác đau tức và tiếng động/ù tai."
@@ -36,51 +51,88 @@ const EAR_PARTS = [
     id: 4,
     name: "Chuỗi xương con",
     latin: "Auditory Ossicles (Búa - Đe - Bàn đạp)",
-    xPercent: 53.1,
-    yPercent: 62.9,
+    badgeTitle: "Chuỗi xương con",
+    badgeDesc: "búa • đe • bàn đạp",
+    color: "#a855f7",
+    colorLight: "#c084fc",
+    xPercent: 51.5,
+    yPercent: 42.5,
+    arrowSide: "bottom", // starts from bottom edge of top-center badge
     soundOrder: 4,
     role: "Ba xương nhỏ nhất cơ thể nằm trong tai giữa. Nhận rung động từ màng nhĩ rồi truyền vào tai trong.",
     details: "Gồm xương búa (malleus), xương đe (incus) và xương bàn đạp (stapes). Chuỗi xương này hoạt động như một hệ đòn bẩy khuếch đại lực rung động của màng nhĩ lên gấp hơn 20 lần trước khi tác động vào dịch tai trong."
   },
   {
     id: 5,
-    name: "Ốc tai",
-    latin: "Cochlea",
-    xPercent: 65.6,
-    yPercent: 68.6,
-    soundOrder: 5,
-    role: "Nằm ở tai trong, có hình xoắn ốc chứa dịch. Biến rung động thành tín hiệu thần kinh.",
-    details: "Cơ quan thính giác chính chứa đầy chất dịch và hàng nghìn tế bào lông cảm thụ tinh vi. Dao động của xương bàn đạp tạo ra sóng dịch kích thích tế bào lông phát ra các xung điện sinh học."
-  },
-  {
-    id: 6,
     name: "Dây thần kinh thính giác",
     latin: "Auditory Nerve (Dây VIII)",
-    xPercent: 61.5,
-    yPercent: 61.4,
+    badgeTitle: "Dây thần kinh thính giác",
+    badgeDesc: "Dẫn tín hiệu lên não",
+    color: "#ea580c",
+    colorLight: "#fb923c",
+    xPercent: 63.5,
+    yPercent: 40.5,
+    arrowSide: "left", // starts from left edge of right badges
     soundOrder: 6,
     role: "Nhận tín hiệu từ ốc tai. Truyền tín hiệu lên não để ta nhận biết âm thanh.",
     details: "Bó sợi thần kinh cảm giác truyền các tín hiệu điện với tốc độ cực nhanh từ ốc tai về trung tâm thính giác ở vỏ não, nơi tín hiệu được giải mã thành âm thanh ta nghe và hiểu được."
   },
   {
+    id: 6,
+    name: "Ốc tai",
+    latin: "Cochlea",
+    badgeTitle: "Ốc tai",
+    badgeDesc: "Tai trong",
+    color: "#10b981",
+    colorLight: "#34d399",
+    xPercent: 64.5,
+    yPercent: 48.5,
+    arrowSide: "left",
+    soundOrder: 5,
+    role: "Nằm ở tai trong, có hình xoắn ốc chứa dịch. Biến rung động thành tín hiệu thần kinh.",
+    details: "Cơ quan thính giác chính chứa đầy chất dịch và hàng nghìn tế bào lông cảm thụ tinh vi. Dao động của xương bàn đạp tạo ra sóng dịch kích thích tế bào lông phát ra các xung điện sinh học."
+  },
+  {
     id: 7,
     name: "Vòi tai (Vòi nhĩ)",
     latin: "Eustachian Tube",
-    xPercent: 70.4,
-    yPercent: 82.4,
-    soundOrder: 0, // Pressure regulation organ
+    badgeTitle: "Vòi tai",
+    badgeDesc: "Cân bằng áp suất",
+    color: "#06b6d4",
+    colorLight: "#22d3ee",
+    xPercent: 68.0,
+    yPercent: 68.0,
+    arrowSide: "left",
+    soundOrder: 0,
     role: "Ống nối tai giữa với vòm mũi – họng. Có nhiệm vụ điều hòa và cân bằng áp suất hai bên màng nhĩ. Thường đóng; khi nuốt hoặc ngáp thì mở rộng cho không khí đi vào (hoặc ra) tai giữa.",
     details: "Ống dài khoảng 3.5 cm nối hòm nhĩ với họng mũi. Đây là 'chiếc van an toàn' của tai. Bình thường vòi đóng kín để vi khuẩn từ họng không tràn lên tai. Khi nuốt nước bọt hoặc ngáp, cơ mở vòi co lại giúp khí tràn vào cân bằng áp suất!"
   }
 ];
 
 class EarSimulation {
-  constructor(canvasId, imgId) {
+  constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
-    this.ctx = this.canvas.getContext('2d');
-    this.img = document.getElementById(imgId);
+    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+    this.viewport = document.getElementById('ear3DViewport');
+    this.stage = document.getElementById('ear3DStage');
+    this.calloutsContainer = document.getElementById('earCalloutsContainer');
 
-    // Mode: 'anatomy' (Tìm hiểu bộ phận) or 'pressure' (Máy bay cất/hạ cánh)
+    // 3D Orbit & Zoom State
+    this.rotX = 0; // Pitch: -25 to +25 deg
+    this.rotY = 0; // Yaw: -50 to +50 deg
+    this.zoom = 1.0; // 0.65 to 2.2
+    this.isDragging = false;
+    this.lastMouseX = 0;
+    this.lastMouseY = 0;
+
+    // Auto-sway state
+    this.isAutoSway = false;
+    this.swayTime = 0;
+
+    // Annotations visibility (HUD toggle)
+    this.showCallouts = true;
+
+    // Sub-mode: 'anatomy' (Tìm hiểu bộ phận) or 'pressure' (Máy bay cất/hạ cánh)
     this.subMode = 'anatomy';
 
     // Exploration tracker
@@ -90,29 +142,24 @@ class EarSimulation {
 
     // Flight Pressure Stages: 1 = Cân bằng, 2 = Áp suất đổi, 3 = Tiếng động, 4 = Nuốt/ngáp
     this.stage = 1;
-    this.flightScenario = 'landing'; // 'landing' (hạ cánh) or 'takeoff' (cất cánh)
-
-    // Pressures in kPa
-    this.pOuter = 80; // 80 kPa at high altitude
+    this.pOuter = 80; // 80 kPa at altitude
     this.pInner = 80;
     this.eardrumDeform = 0; // 0 = flat, +1 = inward, -1 = outward
     this.targetDeform = 0;
 
-    // Eustachian Tube State
+    // Eustachian Tube Airflow State
     this.isEustachianOpen = false;
     this.eustachianParticles = [];
     this.initEustachianParticles(24);
 
-    // Sound wave animation
+    // Sound wave traveling animation
     this.isAcousticPlaying = false;
     this.acousticProgress = 0;
 
-    // Canvas Mouse interaction
-    this.mousePos = { x: 0, y: 0 };
-    this.hoverPartId = null;
-
     this.bindEvents();
     this.resize();
+    this.update3DTransform();
+    this.selectPart(1);
     this.startLoop();
   }
 
@@ -129,8 +176,8 @@ class EarSimulation {
   }
 
   resize() {
-    if (!this.canvas) return;
-    const rect = this.canvas.getBoundingClientRect();
+    if (!this.canvas || !this.viewport) return;
+    const rect = this.viewport.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     this.width = rect.width;
     this.height = rect.height;
@@ -139,6 +186,148 @@ class EarSimulation {
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
+  }
+
+  // -------------------------------------------------------------
+  // 3D VIEWER CONTROLS (Tự lắc, Chú thích, Zoom +, Zoom -)
+  // -------------------------------------------------------------
+  toggleAutoSway() {
+    this.isAutoSway = !this.isAutoSway;
+    const btn = document.getElementById('btnAutoSway');
+    const label = document.getElementById('autoSwayLabel');
+    if (btn) {
+      if (this.isAutoSway) {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-bold shadow-md border border-teal-400 transition animate-pulse";
+        if (label) label.textContent = "Đang lắc...";
+      } else {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold shadow-md border border-slate-200 transition";
+        if (label) label.textContent = "Tự lắc";
+        this.rotX = 0;
+        this.rotY = 0;
+        this.update3DTransform();
+      }
+    }
+    if (window.sound) window.sound.playClick();
+  }
+
+  toggleAnnotations() {
+    this.showCallouts = !this.showCallouts;
+    const btn = document.getElementById('btnToggleAnnotations');
+    if (btn) {
+      if (this.showCallouts) {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0f4049] text-white text-xs font-bold shadow-md border border-teal-400/50 transition";
+      } else {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-slate-700 text-xs font-bold shadow-md border border-slate-200 transition";
+      }
+    }
+    if (this.calloutsContainer) {
+      if (this.showCallouts) {
+        this.calloutsContainer.classList.remove('opacity-0', 'pointer-events-none');
+      } else {
+        this.calloutsContainer.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+    if (window.sound) window.sound.playClick();
+  }
+
+  zoomIn() {
+    this.zoom = Math.min(2.2, this.zoom + 0.15);
+    this.update3DTransform();
+    if (window.sound) window.sound.playClick();
+  }
+
+  zoomOut() {
+    this.zoom = Math.max(0.65, this.zoom - 0.15);
+    this.update3DTransform();
+    if (window.sound) window.sound.playClick();
+  }
+
+  reset3D() {
+    this.rotX = 0;
+    this.rotY = 0;
+    this.zoom = 1.0;
+    this.isAutoSway = false;
+    const btn = document.getElementById('btnAutoSway');
+    const label = document.getElementById('autoSwayLabel');
+    if (btn) btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold shadow-md border border-slate-200 transition";
+    if (label) label.textContent = "Tự lắc";
+    this.update3DTransform();
+  }
+
+  update3DTransform() {
+    if (!this.stage) return;
+    this.stage.style.transform = `perspective(1000px) rotateX(${this.rotX.toFixed(2)}deg) rotateY(${this.rotY.toFixed(2)}deg) scale(${this.zoom.toFixed(3)})`;
+  }
+
+  // -------------------------------------------------------------
+  // ANATOMY SELECTION & TRACKING
+  // -------------------------------------------------------------
+  selectPart(id) {
+    this.selectedPartId = id;
+    this.exploredParts.add(id);
+
+    const part = EAR_PARTS.find(p => p.id === id);
+    if (!part) return;
+
+    // Show checkmark on the 3D HUD badge
+    const badgeCheck = document.getElementById(`badgeCheck-${id}`);
+    if (badgeCheck) badgeCheck.classList.remove('hidden');
+
+    // Highlight active 3D badge
+    EAR_PARTS.forEach(p => {
+      const bEl = document.getElementById(`earBadge-${p.id}`);
+      if (bEl) {
+        if (p.id === id) {
+          bEl.classList.add('active');
+        } else {
+          bEl.classList.remove('active');
+        }
+      }
+    });
+
+    // Update Right UI Card
+    const titleEl = document.getElementById('partCardTitle');
+    const latinEl = document.getElementById('partCardLatin');
+    const roleEl = document.getElementById('partCardRole');
+    const detailsEl = document.getElementById('partCardDetails');
+    const progressBadge = document.getElementById('earProgressBadge');
+    const progressBar = document.getElementById('earProgressBar');
+
+    if (titleEl) titleEl.textContent = `${part.id}. ${part.name}`;
+    if (latinEl) latinEl.textContent = part.latin;
+    if (roleEl) roleEl.textContent = part.role;
+    if (detailsEl) detailsEl.textContent = part.details;
+
+    const count = this.exploredParts.size;
+    if (progressBadge) progressBadge.textContent = `${count} / 7 bộ phận`;
+    if (progressBar) progressBar.style.width = `${(count / 7) * 100}%`;
+
+    // Highlight active list button in right sidebar
+    document.querySelectorAll('.part-item-btn').forEach(btn => {
+      const bid = parseInt(btn.dataset.id);
+      if (bid === id) {
+        btn.classList.add('bg-sky-50', 'border-sky-300', 'text-sky-900', 'font-bold');
+      } else {
+        btn.classList.remove('bg-sky-50', 'border-sky-300', 'text-sky-900', 'font-bold');
+      }
+
+      if (this.exploredParts.has(bid)) {
+        const check = btn.querySelector('.part-check');
+        if (check) check.textContent = "✓";
+      }
+    });
+
+    // Check if finished all 7
+    if (count === 7 && !this.unlockedFlightMode) {
+      this.unlockedFlightMode = true;
+      const unlockAlert = document.getElementById('flightUnlockedAlert');
+      const lockBadge = document.getElementById('flightLockBadge');
+      if (unlockAlert) unlockAlert.classList.remove('hidden');
+      if (lockBadge) lockBadge.classList.add('hidden');
+      if (window.sound) window.sound.playSuccess();
+    } else {
+      if (window.sound) window.sound.playClick();
+    }
   }
 
   // Switch between Anatomy mode and Flight Pressure mode
@@ -171,59 +360,6 @@ class EarSimulation {
     if (window.sound) window.sound.playClick();
   }
 
-  // Select an anatomical part (by pin click or list item click)
-  selectPart(id) {
-    this.selectedPartId = id;
-    this.exploredParts.add(id);
-
-    const part = EAR_PARTS.find(p => p.id === id);
-    if (!part) return;
-
-    // Update UI Card
-    const titleEl = document.getElementById('partCardTitle');
-    const latinEl = document.getElementById('partCardLatin');
-    const roleEl = document.getElementById('partCardRole');
-    const detailsEl = document.getElementById('partCardDetails');
-    const progressBadge = document.getElementById('earProgressBadge');
-    const progressBar = document.getElementById('earProgressBar');
-
-    if (titleEl) titleEl.textContent = `${part.id}. ${part.name}`;
-    if (latinEl) latinEl.textContent = part.latin;
-    if (roleEl) roleEl.textContent = part.role;
-    if (detailsEl) detailsEl.textContent = part.details;
-
-    const count = this.exploredParts.size;
-    if (progressBadge) progressBadge.textContent = `${count} / 7 bộ phận`;
-    if (progressBar) progressBar.style.width = `${(count / 7) * 100}%`;
-
-    // Highlight active list button
-    document.querySelectorAll('.part-item-btn').forEach(btn => {
-      const bid = parseInt(btn.dataset.id);
-      if (bid === id) {
-        btn.classList.add('bg-sky-50', 'border-sky-300', 'text-sky-900', 'font-bold');
-      } else {
-        btn.classList.remove('bg-sky-50', 'border-sky-300', 'text-sky-900', 'font-bold');
-      }
-
-      if (this.exploredParts.has(bid)) {
-        const check = btn.querySelector('.part-check');
-        if (check) check.textContent = "✓";
-      }
-    });
-
-    // Check if finished all 7
-    if (count === 7 && !this.unlockedFlightMode) {
-      this.unlockedFlightMode = true;
-      const unlockAlert = document.getElementById('flightUnlockedAlert');
-      const lockBadge = document.getElementById('flightLockBadge');
-      if (unlockAlert) unlockAlert.classList.remove('hidden');
-      if (lockBadge) lockBadge.classList.add('hidden');
-      if (window.sound) window.sound.playSuccess();
-    } else {
-      if (window.sound) window.sound.playClick();
-    }
-  }
-
   // Play traveling acoustic sound wave animation
   playAcousticWave() {
     this.isAcousticPlaying = true;
@@ -240,9 +376,6 @@ class EarSimulation {
 
     const stageTitle = document.getElementById('flightStageTitle');
     const stageDesc = document.getElementById('flightStageDesc');
-    const outerPText = document.getElementById('flightOuterP');
-    const innerPText = document.getElementById('flightInnerP');
-    const deltaPText = document.getElementById('flightDeltaP');
     const swallowBtn = document.getElementById('swallowActionBtn');
 
     // Update active stage buttons
@@ -324,7 +457,7 @@ class EarSimulation {
 
     this.updatePressureTelemetry();
 
-    // After 2.5 seconds, Eustachian tube naturally closes again
+    // After 2.8 seconds, Eustachian tube naturally closes again
     setTimeout(() => {
       this.isEustachianOpen = false;
     }, 2800);
@@ -360,241 +493,247 @@ class EarSimulation {
   }
 
   // -------------------------------------------------------------
-  // CANVAS RENDERING
+  // CANVAS RENDERING (Arrows, Sound Waves, Pressure Overlays)
   // -------------------------------------------------------------
   render() {
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
-    if (!w || !h) return;
+    if (!ctx || !w || !h || !this.viewport) return;
 
     ctx.clearRect(0, 0, w, h);
 
-    // 1. Draw 3D Ear Cutaway Background Image
-    if (this.img && this.img.complete) {
-      // Draw image keeping aspect ratio centered
-      const imgRatio = this.img.naturalWidth / this.img.naturalHeight;
-      const canvasRatio = w / h;
-      let dw, dh, dx, dy;
+    const canvasRect = this.canvas.getBoundingClientRect();
 
-      if (canvasRatio > imgRatio) {
-        dh = h;
-        dw = h * imgRatio;
-        dx = (w - dw) * 0.5;
-        dy = 0;
-      } else {
-        dw = w;
-        dh = w / imgRatio;
-        dx = 0;
-        dy = (h - dh) * 0.5;
-      }
-
-      ctx.drawImage(this.img, dx, dy, dw, dh);
-      this.modelBounds = { dx, dy, dw, dh };
-    } else {
-      // Fallback placeholder
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, w, h);
+    // 1. Draw Multicolored Connecting Arrows to 3D Pins
+    if (this.showCallouts) {
+      this.drawCalloutArrows(ctx, canvasRect);
     }
 
-    // Helper to get canvas pixel coordinates from percentage on 3D model
-    const getPos = (pX, pY) => {
-      const b = this.modelBounds || { dx: 0, dy: 0, dw: w, dh: h };
-      return {
-        x: b.dx + (pX / 100) * b.dw,
-        y: b.dy + (pY / 100) * b.dh
-      };
-    };
-
-    // 2. Acoustic wave animation
+    // 2. Sound Wave Traveling Animation
     if (this.isAcousticPlaying) {
-      this.drawAcousticWaveFlow(ctx, getPos);
+      this.drawAcousticWaveFlow(ctx, canvasRect);
     }
 
-    // 3. Pressure mode overlays: Pressure arrows & Eardrum deformation & Eustachian tube airflow
+    // 3. Pressure mode overlays: Pressure gauge vectors, Eardrum deformation & Eustachian airflow
     if (this.subMode === 'pressure') {
-      this.drawPressureModeOverlays(ctx, getPos);
+      this.drawPressureModeOverlays(ctx, canvasRect);
     }
-
-    // 4. Interactive Anatomy Pins (Shown in both or anatomy mode)
-    this.drawAnatomicalPins(ctx, getPos);
   }
 
-  // Draw interactive pins on the 7 ear parts
-  drawAnatomicalPins(ctx, getPos) {
+  // Draw vibrant multicolored arrows connecting HUD badges to 3D pins
+  drawCalloutArrows(ctx, canvasRect) {
     EAR_PARTS.forEach(part => {
-      const pos = getPos(part.xPercent, part.yPercent);
+      const badgeEl = document.getElementById(`earBadge-${part.id}`);
+      const pinEl = document.getElementById(`earPin-${part.id}`);
+      if (!badgeEl || !pinEl) return;
+
+      const bRect = badgeEl.getBoundingClientRect();
+      const pRect = pinEl.getBoundingClientRect();
+
+      // Start coordinate on badge border
+      let startX, startY;
+      if (part.arrowSide === 'right') {
+        startX = bRect.right - canvasRect.left;
+        startY = bRect.top + bRect.height * 0.5 - canvasRect.top;
+      } else if (part.arrowSide === 'bottom') {
+        startX = bRect.left + bRect.width * 0.5 - canvasRect.left;
+        startY = bRect.bottom - canvasRect.top;
+      } else {
+        // 'left'
+        startX = bRect.left - canvasRect.left;
+        startY = bRect.top + bRect.height * 0.5 - canvasRect.top;
+      }
+
+      // Pin center coordinate
+      const pinX = pRect.left + pRect.width * 0.5 - canvasRect.left;
+      const pinY = pRect.top + pRect.height * 0.5 - canvasRect.top;
+
+      // Vector to pin
+      const dx = pinX - startX;
+      const dy = pinY - startY;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 15) return; // Too close
+
+      // Offset end by 12px so arrowhead meets the outer edge of pin
+      const targetX = pinX - (dx / dist) * 12;
+      const targetY = pinY - (dy / dist) * 12;
+
       const isSelected = (this.selectedPartId === part.id);
-      const isHovered = (this.hoverPartId === part.id);
-      const isExplored = this.exploredParts.has(part.id);
+      const strokeColor = isSelected ? '#fbbf24' : (part.colorLight || part.color);
 
       ctx.save();
+      ctx.strokeStyle = strokeColor;
+      ctx.fillStyle = strokeColor;
+      ctx.lineWidth = isSelected ? 3.0 : 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = strokeColor;
+      ctx.shadowBlur = isSelected ? 8 : 4;
 
-      // Pulsing glow if active
-      if (isSelected || isHovered) {
-        ctx.fillStyle = 'rgba(2, 132, 199, 0.25)';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 18, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Pin circle
+      // Draw arrow line
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 11, 0, Math.PI * 2);
-      ctx.fillStyle = isSelected ? '#0284c7' : (isExplored ? '#059669' : '#f59e0b');
-      ctx.fill();
-
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(targetX, targetY);
       ctx.stroke();
 
-      // Pin number
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${part.id}`, pos.x, pos.y);
-
-      // Label tag above pin
-      if (isSelected || isHovered) {
-        ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
-        const txt = part.name;
-        const tw = ctx.measureText(txt).width;
-
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.beginPath();
-        ctx.roundRect(pos.x - tw * 0.5 - 6, pos.y - 28, tw + 12, 18, 4);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(txt, pos.x, pos.y - 19);
-      }
+      // Draw arrowhead triangle
+      const headLen = isSelected ? 11 : 9.5;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(targetX, targetY);
+      ctx.lineTo(
+        targetX - headLen * Math.cos(angle - Math.PI / 6.5),
+        targetY - headLen * Math.sin(angle - Math.PI / 6.5)
+      );
+      ctx.lineTo(
+        targetX - headLen * Math.cos(angle + Math.PI / 6.5),
+        targetY - headLen * Math.sin(angle + Math.PI / 6.5)
+      );
+      ctx.closePath();
+      ctx.fill();
 
       ctx.restore();
     });
   }
 
-  // Draw traveling acoustic sound wave animation through the ear
-  drawAcousticWaveFlow(ctx, getPos) {
-    // Path from Pinna -> Canal -> Eardrum -> Ossicles -> Cochlea -> Nerve
-    const path = [
-      getPos(17.9, 37.6), // 1. Pinna
-      getPos(32.0, 52.0),
-      getPos(40.6, 65.8), // 2. Canal
-      getPos(46.8, 66.5), // 3. Eardrum
-      getPos(53.1, 62.9), // 4. Ossicles
-      getPos(65.6, 68.6), // 5. Cochlea
-      getPos(61.5, 61.4)  // 6. Auditory Nerve
-    ];
+  // Draw acoustic traveling wave impulse through ear structures
+  drawAcousticWaveFlow(ctx, canvasRect) {
+    // Sound wave traveling path: 1. Vành tai -> 2. Ống tai -> 3. Màng nhĩ -> 4. Xương con -> 6. Ốc tai -> 5. Dây thần kinh
+    const partOrder = [1, 2, 3, 4, 6, 5];
+    const pts = [];
+
+    partOrder.forEach(pid => {
+      const pinEl = document.getElementById(`earPin-${pid}`);
+      if (pinEl) {
+        const r = pinEl.getBoundingClientRect();
+        pts.push({
+          x: r.left + r.width * 0.5 - canvasRect.left,
+          y: r.top + r.height * 0.5 - canvasRect.top
+        });
+      }
+    });
+
+    if (pts.length < 2) return;
 
     ctx.save();
+
     // Draw sound wave line
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
     ctx.lineWidth = 3;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    path.forEach((pt, idx) => {
+    pts.forEach((pt, idx) => {
       if (idx === 0) ctx.moveTo(pt.x, pt.y);
       else ctx.lineTo(pt.x, pt.y);
     });
     ctx.stroke();
 
-    // Traveling wave ripple
+    // Traveling wave pulse
     const t = this.acousticProgress;
-    const totalSegs = path.length - 1;
+    const totalSegs = pts.length - 1;
     const currentSeg = Math.min(totalSegs - 1, Math.floor(t * totalSegs));
     const segT = (t * totalSegs) - currentSeg;
 
-    const pA = path[currentSeg];
-    const pB = path[currentSeg + 1];
+    const pA = pts[currentSeg];
+    const pB = pts[currentSeg + 1];
     const waveX = pA.x + (pB.x - pA.x) * segT;
     const waveY = pA.y + (pB.y - pA.y) * segT;
 
-    // Glowing acoustic impulse ring
+    // Glowing pulse impulse
     ctx.fillStyle = '#38bdf8';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 12;
     ctx.beginPath();
-    ctx.arc(waveX, waveY, 8, 0, Math.PI * 2);
+    ctx.arc(waveX, waveY, 9, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
     ctx.restore();
   }
 
-  // Draw Pressure arrows, Eardrum bulging, and Eustachian tube flow
-  drawPressureModeOverlays(ctx, getPos) {
-    const eardrumPos = getPos(46.8, 66.5);
-    const canalPos = getPos(38.0, 65.8);
-    const middleEarPos = getPos(52.0, 64.0);
-    const eustachianTop = getPos(52.5, 67.5);
-    const eustachianBottom = getPos(73.5, 87.0);
+  // Draw pressure arrows and bulging eardrum in pressure simulation mode
+  drawPressureModeOverlays(ctx, canvasRect) {
+    const pin3 = document.getElementById('earPin-3'); // Màng nhĩ
+    const pin7 = document.getElementById('earPin-7'); // Vòi tai
+    if (!pin3) return;
+
+    const r3 = pin3.getBoundingClientRect();
+    const eardrumX = r3.left + r3.width * 0.5 - canvasRect.left;
+    const eardrumY = r3.top + r3.height * 0.5 - canvasRect.top;
 
     ctx.save();
 
-    // 1. EARDRUM BULGING DEFORMATION
-    // Calculate current interpolated deformation (-1.0 to +1.0)
+    // 1. Bulging Eardrum curve
     const deform = this.eardrumDeform;
-    const arcX = eardrumPos.x + deform * 18; // bulges left or right
+    const arcX = eardrumX + deform * 22;
 
-    ctx.strokeStyle = deform > 0.3 ? '#ef4444' : (deform < -0.3 ? '#f59e0b' : '#38bdf8');
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = Math.abs(deform) > 0.4 ? '#ef4444' : '#22c55e';
+    ctx.lineWidth = 4.5;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.moveTo(eardrumPos.x, eardrumPos.y - 20);
-    ctx.quadraticCurveTo(arcX, eardrumPos.y, eardrumPos.x, eardrumPos.y + 20);
+    ctx.moveTo(eardrumX, eardrumY - 26);
+    ctx.quadraticCurveTo(arcX, eardrumY, eardrumX, eardrumY + 26);
     ctx.stroke();
 
-    // 2. PRESSURE ARROWS
-    // Outside pressure in canal pushing inward
-    const outerArrowLen = (this.pOuter / 101) * 26;
+    // 2. Pressure Vectors (Outside in Canal pushing inward vs Middle ear)
+    // Outside pressure vector pushing inward:
+    const outerLen = 35 * (this.pOuter / 101);
     ctx.strokeStyle = this.pOuter > 90 ? '#ef4444' : '#38bdf8';
     ctx.fillStyle = ctx.strokeStyle;
-    this.drawArrow(ctx, canalPos.x - outerArrowLen, canalPos.y, canalPos.x, canalPos.y, 5);
+    this.drawArrow(ctx, eardrumX - outerLen - 12, eardrumY, eardrumX - 10, eardrumY, 6);
 
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(`${this.pOuter} kPa`, canalPos.x - outerArrowLen - 4, canalPos.y - 8);
+    ctx.font = 'bold 11px "JetBrains Mono", monospace';
+    ctx.fillText(`${this.pOuter} kPa`, eardrumX - outerLen - 20, eardrumY - 10);
 
-    // Inside pressure in middle ear pushing outward
-    const innerArrowLen = (this.pInner / 101) * 26;
-    ctx.strokeStyle = this.pInner > 90 ? '#ef4444' : '#38bdf8';
+    // Inside pressure vector pushing outward:
+    const innerLen = 35 * (this.pInner / 101);
+    ctx.strokeStyle = '#38bdf8';
     ctx.fillStyle = ctx.strokeStyle;
-    this.drawArrow(ctx, middleEarPos.x + innerArrowLen, middleEarPos.y, middleEarPos.x, middleEarPos.y, 5);
+    this.drawArrow(ctx, eardrumX + innerLen + 12, eardrumY, eardrumX + 10, eardrumY, 6);
 
-    ctx.fillText(`${this.pInner} kPa`, middleEarPos.x + innerArrowLen + 4, middleEarPos.y - 8);
+    ctx.fillText(`${this.pInner} kPa`, eardrumX + innerLen + 5, eardrumY - 10);
 
-    // 3. EUSTACHIAN TUBE AIRFLOW (When Nuốt/Ngáp)
-    if (this.isEustachianOpen) {
+    // 3. Eustachian Tube Airflow Animation (When Nuốt / Ngáp)
+    if (this.isEustachianOpen && pin7) {
+      const r7 = pin7.getBoundingClientRect();
+      const p7X = r7.left + r7.width * 0.5 - canvasRect.left;
+      const p7Y = r7.top + r7.height * 0.5 - canvasRect.top;
+
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.moveTo(eustachianBottom.x, eustachianBottom.y);
-      ctx.lineTo(eustachianTop.x, eustachianTop.y);
+      ctx.moveTo(p7X, p7Y);
+      ctx.lineTo(eardrumX + 20, eardrumY + 20);
       ctx.stroke();
 
-      // Flow particles streaming up Eustachian tube
+      // Flowing air particles streaming up
       ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#4ade80';
+      ctx.shadowBlur = 6;
       this.eustachianParticles.forEach(p => {
-        const px = eustachianBottom.x + (eustachianTop.x - eustachianBottom.x) * p.progress + p.offset;
-        const py = eustachianBottom.y + (eustachianTop.y - eustachianBottom.y) * p.progress;
-
+        const px = p7X + (eardrumX + 20 - p7X) * p.progress + p.offset;
+        const py = p7Y + (eardrumY + 20 - p7Y) * p.progress;
         ctx.beginPath();
         ctx.arc(px, py, p.size, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Label: Vòi tai mở
-      ctx.fillStyle = '#15803d';
-      ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
-      ctx.fillText('Vòi tai đang mở: Khí tràn vào cân bằng áp suất!', (eustachianTop.x + eustachianBottom.x) * 0.5 + 10, (eustachianTop.y + eustachianBottom.y) * 0.5);
+      // Airflow label
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
+      ctx.fillText('Khí tràn vào tai giữa!', (p7X + eardrumX) * 0.5 + 10, (p7Y + eardrumY) * 0.5);
     }
 
     ctx.restore();
   }
 
-  drawArrow(ctx, fromX, fromY, toX, toY, headlen = 5) {
+  drawArrow(ctx, fromX, fromY, toX, toY, headlen = 6) {
     const dx = toX - fromX;
     const dy = toY - fromY;
     const angle = Math.atan2(dy, dx);
@@ -602,7 +741,7 @@ class EarSimulation {
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);
     ctx.lineTo(toX, toY);
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.8;
     ctx.stroke();
 
     ctx.beginPath();
@@ -614,66 +753,125 @@ class EarSimulation {
   }
 
   // -------------------------------------------------------------
-  // EVENT LISTENERS
+  // MOUSE & TOUCH 3D DRAG ROTATION LISTENERS
   // -------------------------------------------------------------
   bindEvents() {
     window.addEventListener('resize', () => this.resize());
 
-    const getPos = (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
-    };
+    if (!this.viewport) return;
 
-    const checkHoverPin = (mPos) => {
-      for (const part of EAR_PARTS) {
-        const b = this.modelBounds || { dx: 0, dy: 0, dw: this.width, dh: this.height };
-        const px = b.dx + (part.xPercent / 100) * b.dw;
-        const py = b.dy + (part.yPercent / 100) * b.dh;
-        const dist = Math.hypot(mPos.x - px, mPos.y - py);
-        if (dist <= 16) return part.id;
+    // Mouse Drag on Viewport to Orbit 3D
+    this.viewport.addEventListener('mousedown', (e) => {
+      // Don't drag if clicking buttons or badges directly
+      if (e.target.closest('button') || e.target.closest('.ear-callout-badge') || e.target.closest('.ear-3d-pin')) {
+        return;
       }
-      return null;
-    };
+      this.isDragging = true;
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+      this.viewport.style.cursor = 'grabbing';
 
-    this.canvas.addEventListener('mousemove', (e) => {
-      this.mousePos = getPos(e);
-      this.hoverPartId = checkHoverPin(this.mousePos);
-      this.canvas.style.cursor = this.hoverPartId ? 'pointer' : 'default';
-    });
-
-    this.canvas.addEventListener('click', (e) => {
-      const pos = getPos(e);
-      const clickedId = checkHoverPin(pos);
-      if (clickedId) {
-        this.selectPart(clickedId);
+      // Dragging pauses auto-sway
+      if (this.isAutoSway) {
+        this.toggleAutoSway();
       }
     });
 
-    this.canvas.addEventListener('touchstart', (e) => {
-      const pos = getPos(e);
-      const clickedId = checkHoverPin(pos);
-      if (clickedId) {
-        this.selectPart(clickedId);
-        e.preventDefault();
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isDragging) return;
+      const dx = e.clientX - this.lastMouseX;
+      const dy = e.clientY - this.lastMouseY;
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+
+      // Update Yaw & Pitch
+      this.rotY += dx * 0.38;
+      this.rotX -= dy * 0.32;
+
+      // Clamp rotation angles for pleasant anatomy viewing
+      this.rotX = Math.max(-25, Math.min(25, this.rotX));
+      this.rotY = Math.max(-50, Math.min(50, this.rotY));
+
+      this.update3DTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.isDragging) {
+        this.isDragging = false;
+        if (this.viewport) this.viewport.style.cursor = 'grab';
       }
+    });
+
+    // Touch events for tablet/mobile
+    this.viewport.addEventListener('touchstart', (e) => {
+      if (e.target.closest('button') || e.target.closest('.ear-callout-badge') || e.target.closest('.ear-3d-pin')) {
+        return;
+      }
+      if (e.touches.length === 1) {
+        this.isDragging = true;
+        this.lastMouseX = e.touches[0].clientX;
+        this.lastMouseY = e.touches[0].clientY;
+        if (this.isAutoSway) this.toggleAutoSway();
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!this.isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - this.lastMouseX;
+      const dy = e.touches[0].clientY - this.lastMouseY;
+      this.lastMouseX = e.touches[0].clientX;
+      this.lastMouseY = e.touches[0].clientY;
+
+      this.rotY += dx * 0.38;
+      this.rotX -= dy * 0.32;
+      this.rotX = Math.max(-25, Math.min(25, this.rotX));
+      this.rotY = Math.max(-50, Math.min(50, this.rotY));
+
+      this.update3DTransform();
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      this.isDragging = false;
+    });
+
+    // Mouse wheel zoom
+    this.viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.08 : -0.08;
+      this.zoom = Math.max(0.65, Math.min(2.2, this.zoom + delta));
+      this.update3DTransform();
     }, { passive: false });
+
+    // Double click to reset 3D view
+    this.viewport.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button') || e.target.closest('.ear-callout-badge') || e.target.closest('.ear-3d-pin')) {
+        return;
+      }
+      this.reset3D();
+    });
   }
 
+  // -------------------------------------------------------------
+  // ANIMATION LOOP (60 FPS)
+  // -------------------------------------------------------------
   startLoop() {
     let last = performance.now();
     const loop = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      // Update eardrum deformation spring
+      // Auto-sway gentle 3D oscillation
+      if (this.isAutoSway && !this.isDragging) {
+        this.swayTime += dt * 1.5;
+        this.rotY = Math.sin(this.swayTime) * 16;
+        this.rotX = Math.cos(this.swayTime * 0.7) * 8;
+        this.update3DTransform();
+      }
+
+      // Smooth eardrum deformation spring
       this.eardrumDeform += (this.targetDeform - this.eardrumDeform) * 8.0 * dt;
 
-      // Update acoustic wave progress
+      // Acoustic wave progress
       if (this.isAcousticPlaying) {
         this.acousticProgress += dt * 0.85;
         if (this.acousticProgress >= 1.0) {
@@ -682,7 +880,7 @@ class EarSimulation {
         }
       }
 
-      // Update Eustachian particles
+      // Eustachian particles flow
       if (this.isEustachianOpen) {
         this.eustachianParticles.forEach(p => {
           p.progress += dt * p.speed;
@@ -698,9 +896,7 @@ class EarSimulation {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Initialize EarSimulation if canvas exists
-  if (document.getElementById('earCanvas')) {
-    window.earSim = new EarSimulation('earCanvas', 'earModelImg');
+  if (document.getElementById('ear3DViewport')) {
+    window.earSim = new EarSimulation('earCanvas');
   }
 });
-

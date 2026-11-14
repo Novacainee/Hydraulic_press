@@ -435,15 +435,179 @@
         </button>
       </div>
 
-      <!-- Ear 3D Canvas Box -->
+      <!-- Ear 3D Interactive Viewport Box -->
       <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1">
         
-        <!-- Preloaded 3D Model Image (Hidden, drawn on canvas) -->
-        <img id="earModelImg" src="ear_3d_model.jpg" class="hidden" alt="3D Ear Cutaway Model">
+        <!-- 3D Viewport with Perspective & Drag Orbit -->
+        <div id="ear3DViewport" class="ear-3d-viewport relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[460px] md:min-h-[520px] flex items-center justify-center cursor-grab">
+          
+          <!-- Top Left HUD Controls matching reference mockup -->
+          <div class="absolute top-3 left-3 z-30 flex items-center gap-1.5 sm:gap-2">
+            <button id="btnAutoSway" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold shadow-md border border-slate-200 transition" onclick="earSim.toggleAutoSway()" title="Bật/tắt tự động lắc mô hình 3D">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-slate-700"></i>
+              <span id="autoSwayLabel">Tự lắc</span>
+            </button>
 
-        <!-- Canvas for 3D Ear View & Interactive Overlays -->
-        <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[420px] md:min-h-[480px] flex items-center justify-center bg-slate-900">
-          <canvas id="earCanvas" class="w-full h-full block cursor-default"></canvas>
+            <button id="btnToggleAnnotations" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0f4049] text-white text-xs font-bold shadow-md border border-teal-400/50 transition" onclick="earSim.toggleAnnotations()" title="Bật/tắt hiển thị nhãn chú thích">
+              <span>Chú thích</span>
+            </button>
+
+            <button id="btnZoomIn" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-base font-bold shadow-md border border-slate-200 flex items-center justify-center transition" onclick="earSim.zoomIn()" title="Phóng to 3D">+</button>
+            
+            <button id="btnZoomOut" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-base font-bold shadow-md border border-slate-200 flex items-center justify-center transition" onclick="earSim.zoomOut()" title="Thu nhỏ 3D">-</button>
+          </div>
+
+          <!-- 3D Transform Stage (Holds the 3D cutaway and the 7 pins) -->
+          <div id="ear3DStage" class="ear-3d-stage absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div id="ear3DModelContainer" class="relative pointer-events-none" style="width: 760px; max-width: 90%; aspect-ratio: 838/692;">
+              <img id="ear3DImg" src="ear_3d_model.jpg" class="w-full h-full object-contain pointer-events-none select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.7)]" alt="3D Ear Cutaway Model">
+
+              <!-- 7 Anatomical Hotspot Pins on 3D Model -->
+              <div id="earPin-1" class="ear-3d-pin pointer-events-auto" style="left: 19.5%; top: 18.5%;" onclick="earSim.selectPart(1)" title="1. Vành tai">
+                <div class="pin-glow bg-amber-400"></div>
+                <div class="pin-core bg-amber-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-2" class="ear-3d-pin pointer-events-auto" style="left: 37.5%; top: 45.0%;" onclick="earSim.selectPart(2)" title="2. Ống tai">
+                <div class="pin-glow bg-sky-400"></div>
+                <div class="pin-core bg-sky-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-3" class="ear-3d-pin pointer-events-auto" style="left: 47.0%; top: 44.0%;" onclick="earSim.selectPart(3)" title="3. Màng nhĩ">
+                <div class="pin-glow bg-pink-400"></div>
+                <div class="pin-core bg-pink-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-4" class="ear-3d-pin pointer-events-auto" style="left: 51.5%; top: 42.5%;" onclick="earSim.selectPart(4)" title="4. Chuỗi xương con">
+                <div class="pin-glow bg-purple-400"></div>
+                <div class="pin-core bg-purple-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-5" class="ear-3d-pin pointer-events-auto" style="left: 63.5%; top: 40.5%;" onclick="earSim.selectPart(5)" title="5. Dây thần kinh thính giác">
+                <div class="pin-glow bg-orange-400"></div>
+                <div class="pin-core bg-orange-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-6" class="ear-3d-pin pointer-events-auto" style="left: 64.5%; top: 48.5%;" onclick="earSim.selectPart(6)" title="6. Ốc tai">
+                <div class="pin-glow bg-emerald-400"></div>
+                <div class="pin-core bg-emerald-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+
+              <div id="earPin-7" class="ear-3d-pin pointer-events-auto" style="left: 68.0%; top: 68.0%;" onclick="earSim.selectPart(7)" title="7. Vòi tai">
+                <div class="pin-glow bg-cyan-400"></div>
+                <div class="pin-core bg-cyan-500">
+                  <div class="pin-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas for Arrows, Sound Waves & Flight Pressure Overlays -->
+          <canvas id="earCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
+
+          <!-- 7 Callout Badges (HUD) positioned along perimeters -->
+          <div id="earCalloutsContainer" class="absolute inset-0 pointer-events-none transition-opacity duration-300">
+            
+            <!-- Left Badges -->
+            <!-- 1. Vành tai -->
+            <div id="earBadge-1" class="ear-callout-badge absolute pointer-events-auto" style="left: 2.5%; top: 18%;" onclick="earSim.selectPart(1)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-slate-950 bg-amber-400">
+                <span class="part-num-text">1</span>
+                <span id="badgeCheck-1" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Vành tai</span>
+                <span class="text-emerald-300 text-[10px]">Hứng âm thanh</span>
+              </div>
+            </div>
+
+            <!-- 2. Ống tai -->
+            <div id="earBadge-2" class="ear-callout-badge absolute pointer-events-auto" style="left: 3.5%; top: 44%;" onclick="earSim.selectPart(2)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-sky-500">
+                <span class="part-num-text">2</span>
+                <span id="badgeCheck-2" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Ống tai</span>
+                <span class="text-emerald-300 text-[10px]">Dẫn âm thanh</span>
+              </div>
+            </div>
+
+            <!-- 3. Màng nhĩ -->
+            <div id="earBadge-3" class="ear-callout-badge absolute pointer-events-auto" style="left: 2.5%; top: 68%;" onclick="earSim.selectPart(3)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-pink-500">
+                <span class="part-num-text">3</span>
+                <span id="badgeCheck-3" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Màng nhĩ</span>
+                <span class="text-emerald-300 text-[10px]">Ngăn ống tai và tai giữa</span>
+              </div>
+            </div>
+
+            <!-- Top Center Badge: 4. Chuỗi xương con -->
+            <div id="earBadge-4" class="ear-callout-badge absolute pointer-events-auto" style="left: 45%; top: 8%;" onclick="earSim.selectPart(4)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-purple-500">
+                <span class="part-num-text">4</span>
+                <span id="badgeCheck-4" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Chuỗi xương con</span>
+                <span class="text-emerald-300 text-[10px]">búa • đe • bàn đạp</span>
+              </div>
+            </div>
+
+            <!-- Right Badges -->
+            <!-- 5. Dây thần kinh thính giác -->
+            <div id="earBadge-5" class="ear-callout-badge absolute pointer-events-auto" style="right: 2.5%; top: 22%;" onclick="earSim.selectPart(5)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-orange-500">
+                <span class="part-num-text">5</span>
+                <span id="badgeCheck-5" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Dây thần kinh thính giác</span>
+                <span class="text-emerald-300 text-[10px]">Dẫn tín hiệu lên não</span>
+              </div>
+            </div>
+
+            <!-- 6. Ốc tai -->
+            <div id="earBadge-6" class="ear-callout-badge absolute pointer-events-auto" style="right: 2.5%; top: 44%;" onclick="earSim.selectPart(6)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-emerald-500">
+                <span class="part-num-text">6</span>
+                <span id="badgeCheck-6" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Ốc tai</span>
+                <span class="text-emerald-300 text-[10px]">Tai trong</span>
+              </div>
+            </div>
+
+            <!-- 7. Vòi tai -->
+            <div id="earBadge-7" class="ear-callout-badge absolute pointer-events-auto" style="right: 2.5%; top: 68%;" onclick="earSim.selectPart(7)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-slate-950 bg-cyan-400">
+                <span class="part-num-text">7</span>
+                <span id="badgeCheck-7" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-white font-bold text-xs">Vòi tai</span>
+                <span class="text-emerald-300 text-[10px]">Cân bằng áp suất</span>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
         <!-- Instructional Bottom Tip -->
@@ -451,10 +615,10 @@
           <div class="flex items-center gap-2 font-medium">
             <i data-lucide="info" class="w-4 h-4 text-amber-600"></i>
             <span id="earCanvasTip">
-              <strong>Hướng dẫn:</strong> Bấm vào các điểm số 1-7 trên mô hình tai để khám phá tên gọi và vai trò của từng bộ phận (bấm xong cả 7 bộ phận sẽ mở khóa bước Máy bay cất/hạ cánh).
+              <strong>Hướng dẫn 3D:</strong> Nhấn giữ chuột và kéo để xoay 3D • Cuộn chuột hoặc nút +/- để phóng to/thu nhỏ • Bấm vào các điểm hoặc nhãn để tìm hiểu.
             </span>
           </div>
-          <span class="font-bold text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-300" id="earProgressBadge">
+          <span class="font-bold text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-300 shadow-sm" id="earProgressBadge">
             0 / 7 bộ phận
           </span>
         </div>
