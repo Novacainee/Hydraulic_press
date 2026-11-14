@@ -1,4 +1,4 @@
-// Streamlined Application Controller for Practice & Real-World Application
+// Application Controller for 3 Tabs: Practice, Car Lift, and Ear Pressure Simulation
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
@@ -6,9 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lucide.createIcons();
   }
 
-  // 1. Navigation Tab Switching (Practice & Application)
+  // 1. Navigation Tab Switching (3 Tabs)
   const navTabs = document.querySelectorAll('.nav-tab');
-  const tabPanels = document.querySelectorAll('.tab-panel');
+  const mainHydraulic = document.getElementById('mainSectionHydraulic');
+  const mainEar = document.getElementById('mainSectionEar');
+
+  const panelPractice = document.getElementById('panel-practice');
+  const panelApplication = document.getElementById('panel-application');
   const practiceTopActions = document.getElementById('practiceTopActions');
   const applicationTopActions = document.getElementById('applicationTopActions');
 
@@ -20,40 +24,49 @@ document.addEventListener('DOMContentLoaded', () => {
       navTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
 
-      // Update active panel
-      tabPanels.forEach(p => {
-        p.classList.add('hidden');
-        p.classList.remove('active');
-      });
-
-      const activePanel = document.getElementById(`panel-${target}`);
-      if (activePanel) {
-        activePanel.classList.remove('hidden');
-        activePanel.classList.add('active', 'animate-fadeIn');
-      }
-
-      // Update top actions
-      if (target === 'practice') {
-        if (practiceTopActions) practiceTopActions.classList.remove('hidden');
-        if (applicationTopActions) applicationTopActions.classList.add('hidden');
-      } else {
-        if (practiceTopActions) practiceTopActions.classList.add('hidden');
-        if (applicationTopActions) applicationTopActions.classList.remove('hidden');
-      }
-
-      // Reset weights back to rack when switching tabs
-      if (window.sim) {
-        window.sim.returnAllToRack();
-        window.sim.currentTab = target;
+      if (target === 'practice' || target === 'application') {
+        if (mainHydraulic) mainHydraulic.classList.remove('hidden');
+        if (mainEar) mainEar.classList.add('hidden');
 
         if (target === 'practice') {
-          window.sim.resetToInitial();
-        } else if (target === 'application') {
-          window.sim.loadCarLiftMode();
+          if (panelPractice) panelPractice.classList.remove('hidden');
+          if (panelApplication) panelApplication.classList.add('hidden');
+          if (practiceTopActions) practiceTopActions.classList.remove('hidden');
+          if (applicationTopActions) applicationTopActions.classList.add('hidden');
+
+          if (window.sim) {
+            window.sim.currentTab = 'practice';
+            window.sim.returnAllToRack();
+            window.sim.resetToInitial();
+          }
+        } else {
+          // Application
+          if (panelPractice) panelPractice.classList.add('hidden');
+          if (panelApplication) panelApplication.classList.remove('hidden');
+          if (practiceTopActions) practiceTopActions.classList.add('hidden');
+          if (applicationTopActions) applicationTopActions.classList.remove('hidden');
+
+          if (window.sim) {
+            window.sim.currentTab = 'application';
+            window.sim.loadCarLiftMode();
+          }
         }
 
-        window.sim.calculatePhysics();
-        window.sim.updateTelemetry();
+        if (window.sim) {
+          window.sim.calculatePhysics();
+          window.sim.updateTelemetry();
+        }
+      } else if (target === 'ear-pressure') {
+        // Ear Pressure Simulation Tab
+        if (mainHydraulic) mainHydraulic.classList.add('hidden');
+        if (mainEar) mainEar.classList.remove('hidden');
+
+        if (window.earSim) {
+          setTimeout(() => {
+            window.earSim.resize();
+            window.earSim.selectPart(1);
+          }, 50);
+        }
       }
 
       if (window.sound) window.sound.playClick();
@@ -86,8 +99,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetBtn = document.getElementById('resetSimBtn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (window.sim) {
-        window.sim.resetToInitial();
+      const activeTab = document.querySelector('.nav-tab.active');
+      const tabName = activeTab ? activeTab.dataset.tab : 'practice';
+
+      if (tabName === 'ear-pressure') {
+        if (window.earSim) {
+          window.earSim.setSubMode('anatomy');
+          window.earSim.selectPart(1);
+          window.earSim.setStage(1);
+        }
+      } else {
+        if (window.sim) {
+          window.sim.resetToInitial();
+        }
       }
     });
   }
