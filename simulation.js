@@ -404,33 +404,62 @@ class HydraulicSimulation {
     const liveP2 = document.getElementById('liveP2');
     const labelP1Title = document.getElementById('labelP1Title');
     const labelP2Title = document.getElementById('labelP2Title');
-    const ratioSummary = document.getElementById('liveRatioSummary');
     const rackCountBadge = document.getElementById('remainingRackCountBadge');
     const carHeightBadge = document.getElementById('carHeightBadge');
     const statusPill = document.getElementById('statusPill');
     const statusText = document.getElementById('statusText');
 
+    // Automatic formula substitutions: p1 = F1 / S1 and p2 = F2 / S2
+    const fracF1 = document.getElementById('fracF1');
+    const fracS1 = document.getElementById('fracS1');
+    const calcP1Result = document.getElementById('calcP1Result');
+    const calcP1KPa = document.getElementById('calcP1KPa');
+    const weightsP1Count = document.getElementById('weightsP1Count');
+    const subtextP1 = document.getElementById('subtextP1');
+
+    const fracF2 = document.getElementById('fracF2');
+    const fracS2 = document.getElementById('fracS2');
+    const calcP2Result = document.getElementById('calcP2Result');
+    const calcP2KPa = document.getElementById('calcP2KPa');
+    const weightsP2Count = document.getElementById('weightsP2Count');
+    const subtextP2 = document.getElementById('subtextP2');
+
+    const p1_N_cm2 = (f1 / s1);
+    const p2_N_cm2 = (f2 / s2);
+
     if (liveF1) liveF1.textContent = f1.toFixed(0);
     if (liveS1) liveS1.textContent = s1.toFixed(0);
-    if (liveP1) liveP1.textContent = p1_kPa.toFixed(1);
-
     if (liveF2) liveF2.textContent = f2.toFixed(0);
     if (liveS2) liveS2.textContent = s2.toFixed(0);
-    if (liveP2) liveP2.textContent = p2_kPa.toFixed(1);
+
+    if (fracF1) fracF1.textContent = isApp ? "15.000 N" : `${f1} N`;
+    if (fracS1) fracS1.textContent = `${s1} cm²`;
+    if (calcP1Result) calcP1Result.textContent = `${p1_N_cm2.toFixed(1)} N/cm²`;
+    if (calcP1KPa) calcP1KPa.textContent = `${p1_kPa.toFixed(1)} kPa`;
+    if (weightsP1Count) weightsP1Count.textContent = `${this.weights1}`;
+
+    if (fracF2) fracF2.textContent = isApp ? (this.carLiftHeight > 0 ? "300 N" : "0 N") : `${f2} N`;
+    if (fracS2) fracS2.textContent = `${s2} cm²`;
+    if (calcP2Result) calcP2Result.textContent = `${p2_N_cm2.toFixed(1)} N/cm²`;
+    if (calcP2KPa) calcP2KPa.textContent = `${p2_kPa.toFixed(1)} kPa`;
+    if (weightsP2Count) weightsP2Count.textContent = `${this.weights2}`;
+
+    if (subtextP1) {
+      subtextP1.innerHTML = isApp ? 
+        `<span>Tải trọng ô tô: <strong class="text-slate-800">15.000 N</strong> (~1.5 tấn)</span><span class="italic text-slate-400">Bệ nâng lớn</span>` :
+        `<span>Chi tiết: <strong class="text-slate-700">${this.weights1}</strong> quả cân × 10N</span><span class="italic text-slate-400">Áp suất nhánh 1</span>`;
+    }
+    if (subtextP2) {
+      subtextP2.innerHTML = isApp ?
+        `<span>Lực bơm thợ: <strong class="text-slate-800">300 N</strong> (~30 kg)</span><span class="italic text-slate-400">Cần bơm nhỏ</span>` :
+        `<span>Chi tiết: <strong class="text-slate-700">${this.weights2}</strong> quả cân × 10N</span><span class="italic text-slate-400">Áp suất nhánh 2</span>`;
+    }
 
     if (labelP1Title) {
       labelP1Title.textContent = isApp ? "BỆ NÂNG Ô TÔ (1)" : "PÍT-TÔNG (1) LỚN";
     }
     if (labelP2Title) {
       labelP2Title.textContent = isApp ? "CẦN BƠM TAY (2)" : "PÍT-TÔNG (2) NHỎ";
-    }
-
-    if (ratioSummary) {
-      if (isApp) {
-        ratioSummary.innerHTML = `Lợi về lực: <i>F</i><sub>1</sub> = 50 × <i>F</i><sub>2</sub> (15.000N / 300N)`;
-      } else {
-        ratioSummary.innerHTML = `Tỉ lệ diện tích: <i>S</i><sub>1</sub> = ${(s1 / s2).toFixed(1)} × <i>S</i><sub>2</sub>`;
-      }
     }
 
     if (rackCountBadge) {
@@ -1300,7 +1329,7 @@ class HydraulicSimulation {
       return null;
     };
 
-    // Canvas click: In Car Lift mode pumps the handle; in Practice mode clicks on piston weight returns it to rack!
+    // Canvas click: In Car Lift mode pumps the handle
     this.canvas.addEventListener('click', (e) => {
       if (this.isDragging) return;
       const pos = getPos(e);
@@ -1309,15 +1338,6 @@ class HydraulicSimulation {
       if (this.currentTab === 'application' && target === 'pumpLever') {
         this.pumpCarLift();
         return;
-      }
-
-      if (this.currentTab === 'practice') {
-        // Clicking on a weight on Piston 1 or 2 returns it to rack!
-        if (target === 1 && this.weights1 > 0) {
-          this.removeWeightFromPiston(1);
-        } else if (target === 2 && this.weights2 > 0) {
-          this.removeWeightFromPiston(2);
-        }
       }
     });
 

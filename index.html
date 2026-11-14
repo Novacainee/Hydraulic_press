@@ -166,7 +166,7 @@
         <div class="bg-sky-50/80 border-t border-sky-100 px-4 py-2 flex items-center justify-between text-xs text-sky-800">
           <div class="flex items-center gap-2 font-medium">
             <i data-lucide="hand" class="w-4 h-4 text-sky-600"></i>
-            <span><strong>Thao tác:</strong> Dùng chuột kéo quả cân từ khay đặt lên đĩa pít-tông (hoặc bấm vào quả cân trên đĩa để cất lại vào khay).</span>
+            <span><strong>Thao tác:</strong> Kéo quả cân từ khay đặt lên đĩa pít-tông (để cất bớt có thể kéo quả cân từ đĩa về lại khay, hoặc bấm "Cất hết về khay").</span>
           </div>
           <span class="font-mono font-bold text-sky-700 bg-white px-2 py-0.5 rounded border border-sky-200" id="remainingRackCountBadge">
             Khay cân: 6 / 6 quả (10N)
@@ -175,40 +175,73 @@
 
       </div>
 
-      <!-- Real-Time Physical Comparison Bar (Light Clean Theme) -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-        <!-- P1 info -->
-        <div class="p-2.5 rounded-xl bg-white border border-sky-200 flex items-center justify-between shadow-sm">
-          <div>
-            <div class="text-[11px] text-sky-700 font-bold uppercase tracking-wider" id="labelP1Title">Pít-tông (1) Lớn</div>
-            <div class="text-sm font-extrabold text-slate-900 mt-0.5"><span id="liveP1">0.00</span> <span class="text-xs text-slate-500 font-normal">kPa</span></div>
+      <!-- Real-Time Formula & Automatic Calculation Cards (2 Columns: P1 & P2) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+        <!-- P1 Calculation Card -->
+        <div class="p-3 rounded-xl bg-white border border-sky-200 shadow-sm flex flex-col justify-between gap-1.5">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-sky-800 uppercase tracking-wider flex items-center gap-1.5" id="labelP1Title">
+              <span class="w-2 h-2 rounded-full bg-sky-600"></span>
+              <span>Pít-tông (1) Lớn</span>
+            </div>
+            <div class="text-[11px] text-slate-500 font-medium">
+              <i>F</i><sub>1</sub> = <span class="font-bold text-slate-900" id="liveF1">0</span> N | <i>S</i><sub>1</sub> = <span class="font-bold text-slate-900" id="liveS1">20</span> cm²
+            </div>
           </div>
-          <div class="text-right">
-            <div class="text-slate-600">Lực <i>F</i><sub>1</sub> = <span class="font-bold text-slate-900" id="liveF1">0</span> N</div>
-            <div class="text-slate-600">Tiết diện <i>S</i><sub>1</sub> = <span class="font-bold text-slate-900" id="liveS1">20</span> cm²</div>
+
+          <!-- Formula & Automatic substitution fraction -->
+          <div class="p-2 rounded-lg bg-sky-50/80 border border-sky-100 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5 font-mono">
+              <span class="font-bold text-sky-900">p₁ =</span>
+              <div class="inline-flex flex-col items-center align-middle mx-0.5 text-[11px]">
+                <span class="border-b border-sky-800 px-1 font-bold text-sky-900" id="fracF1">0 N</span>
+                <span class="px-1 font-semibold text-slate-600" id="fracS1">20 cm²</span>
+              </div>
+              <span class="font-bold text-slate-500">=</span>
+              <span class="font-bold text-sky-700 text-sm" id="calcP1Result">0.0 N/cm²</span>
+            </div>
+            <span class="text-[11px] text-sky-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-sky-200" id="calcP1KPa">
+              0.0 kPa
+            </span>
+          </div>
+
+          <div class="text-[10px] text-slate-500 flex items-center justify-between" id="subtextP1">
+            <span>Chi tiết: <strong class="text-slate-700" id="weightsP1Count">0</strong> quả cân × 10N</span>
+            <span class="italic text-slate-400">Áp suất mặt chất lỏng (1)</span>
           </div>
         </div>
 
-        <!-- Formula in center -->
-        <div class="p-2.5 rounded-xl bg-gradient-to-r from-sky-50 to-emerald-50 border border-slate-200 flex flex-col items-center justify-center text-center shadow-sm">
-          <div class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Định luật Pascal</div>
-          <div class="font-mono text-xs font-bold text-slate-900 tracking-wider mt-0.5">
-            <i>p</i><sub>1</sub> = <i>F</i><sub>1</sub> / <i>S</i><sub>1</sub> &nbsp;=&nbsp; <i>p</i><sub>2</sub> = <i>F</i><sub>2</sub> / <i>S</i><sub>2</sub>
+        <!-- P2 Calculation Card -->
+        <div class="p-3 rounded-xl bg-white border border-emerald-200 shadow-sm flex flex-col justify-between gap-1.5">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5" id="labelP2Title">
+              <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+              <span>Pít-tông (2) Nhỏ</span>
+            </div>
+            <div class="text-[11px] text-slate-500 font-medium">
+              <i>F</i><sub>2</sub> = <span class="font-bold text-slate-900" id="liveF2">0</span> N | <i>S</i><sub>2</sub> = <span class="font-bold text-slate-900" id="liveS2">10</span> cm²
+            </div>
           </div>
-          <div class="text-[10px] text-slate-600 mt-0.5" id="liveRatioSummary">
-            Tỉ lệ diện tích: <i>S</i><sub>1</sub> = 2.0 × <i>S</i><sub>2</sub>
-          </div>
-        </div>
 
-        <!-- P2 info -->
-        <div class="p-2.5 rounded-xl bg-white border border-emerald-200 flex items-center justify-between shadow-sm">
-          <div>
-            <div class="text-[11px] text-emerald-700 font-bold uppercase tracking-wider" id="labelP2Title">Pít-tông (2) Nhỏ</div>
-            <div class="text-sm font-extrabold text-slate-900 mt-0.5"><span id="liveP2">0.00</span> <span class="text-xs text-slate-500 font-normal">kPa</span></div>
+          <!-- Formula & Automatic substitution fraction -->
+          <div class="p-2 rounded-lg bg-emerald-50/80 border border-emerald-100 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5 font-mono">
+              <span class="font-bold text-emerald-900">p₂ =</span>
+              <div class="inline-flex flex-col items-center align-middle mx-0.5 text-[11px]">
+                <span class="border-b border-emerald-800 px-1 font-bold text-emerald-900" id="fracF2">0 N</span>
+                <span class="px-1 font-semibold text-slate-600" id="fracS2">10 cm²</span>
+              </div>
+              <span class="font-bold text-slate-500">=</span>
+              <span class="font-bold text-emerald-700 text-sm" id="calcP2Result">0.0 N/cm²</span>
+            </div>
+            <span class="text-[11px] text-emerald-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-200" id="calcP2KPa">
+              0.0 kPa
+            </span>
           </div>
-          <div class="text-right">
-            <div class="text-slate-600">Lực <i>F</i><sub>2</sub> = <span class="font-bold text-slate-900" id="liveF2">0</span> N</div>
-            <div class="text-slate-600">Tiết diện <i>S</i><sub>2</sub> = <span class="font-bold text-slate-900" id="liveS2">10</span> cm²</div>
+
+          <div class="text-[10px] text-slate-500 flex items-center justify-between" id="subtextP2">
+            <span>Chi tiết: <strong class="text-slate-700" id="weightsP2Count">0</strong> quả cân × 10N</span>
+            <span class="italic text-slate-400">Áp suất mặt chất lỏng (2)</span>
           </div>
         </div>
       </div>
