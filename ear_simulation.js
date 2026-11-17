@@ -923,7 +923,7 @@ class EarSimulation {
       if (btnTakeoff) {
         btnTakeoff.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
       }
-      if (stageText1) stageText1.textContent = "1️⃣ Cân bằng (Trên cao)";
+      if (stageText1) stageText1.textContent = "1️⃣ Trên cao (Cân bằng)";
       if (stageText2) stageText2.textContent = "2️⃣ Hạ cánh (Áp suất đổi)";
     }
 
@@ -983,7 +983,7 @@ class EarSimulation {
       if (isLanding) {
         this.pOuter = 80;
         this.pInner = 80;
-        if (titleEl) titleEl.textContent = "1. Cân bằng: Máy bay bay ổn định trên cao";
+        if (titleEl) titleEl.textContent = "1. Trên cao: Máy bay bay ổn định trên cao";
         if (descEl) descEl.textContent = "Trong khoang máy bay trên cao (độ cao ổn định), áp suất khoảng 80 kPa. Áp suất hai bên màng nhĩ bằng nhau (80 kPa = 80 kPa) nên màng nhĩ ở vị trí phẳng cân bằng, vòi tai đang đóng. Ta nghe rõ và không có tiếng động lạ.";
       } else {
         this.pOuter = 101;
