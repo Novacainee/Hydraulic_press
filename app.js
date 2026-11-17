@@ -1,4 +1,6 @@
-// Application Controller for 3 Tabs: Practice, Car Lift, and Ear Pressure Simulation
+// Application Controller for 2 Tabs:
+// Tab 1: Thí nghiệm về sự truyền áp suất của chất lỏng (Practice)
+// Tab 2: Tiếng động trong tai (Ear Pressure Simulation)
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
@@ -6,15 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lucide.createIcons();
   }
 
-  // 1. Navigation Tab Switching (3 Tabs)
+  // 1. Navigation Tab Switching (2 Tabs)
   const navTabs = document.querySelectorAll('.nav-tab');
   const mainHydraulic = document.getElementById('mainSectionHydraulic');
   const mainEar = document.getElementById('mainSectionEar');
 
   const panelPractice = document.getElementById('panel-practice');
-  const panelApplication = document.getElementById('panel-application');
   const practiceTopActions = document.getElementById('practiceTopActions');
-  const applicationTopActions = document.getElementById('applicationTopActions');
 
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -24,35 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
       navTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
 
-      if (target === 'practice' || target === 'application') {
+      if (target === 'practice') {
         if (mainHydraulic) mainHydraulic.classList.remove('hidden');
         if (mainEar) mainEar.classList.add('hidden');
 
-        if (target === 'practice') {
-          if (panelPractice) panelPractice.classList.remove('hidden');
-          if (panelApplication) panelApplication.classList.add('hidden');
-          if (practiceTopActions) practiceTopActions.classList.remove('hidden');
-          if (applicationTopActions) applicationTopActions.classList.add('hidden');
-
-          if (window.sim) {
-            window.sim.currentTab = 'practice';
-            window.sim.returnAllToRack();
-            window.sim.resetToInitial();
-          }
-        } else {
-          // Application
-          if (panelPractice) panelPractice.classList.add('hidden');
-          if (panelApplication) panelApplication.classList.remove('hidden');
-          if (practiceTopActions) practiceTopActions.classList.add('hidden');
-          if (applicationTopActions) applicationTopActions.classList.remove('hidden');
-
-          if (window.sim) {
-            window.sim.currentTab = 'application';
-            window.sim.loadCarLiftMode();
-          }
-        }
+        if (panelPractice) panelPractice.classList.remove('hidden');
+        if (practiceTopActions) practiceTopActions.classList.remove('hidden');
 
         if (window.sim) {
+          window.sim.currentTab = 'practice';
+          window.sim.returnAllToRack();
+          window.sim.resetToInitial();
           window.sim.calculatePhysics();
           window.sim.updateTelemetry();
         }
@@ -152,5 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleRuler.addEventListener('change', (e) => {
       if (window.sim) window.sim.showRuler = e.target.checked;
     });
+  }
+
+  // 6. Direct Tab Linking via URL Hash
+  const hash = window.location.hash.replace('#', '');
+  if (hash === 'ear-pressure' || hash === 'practice') {
+    const targetTabBtn = document.querySelector(`.nav-tab[data-tab="${hash}"]`);
+    if (targetTabBtn) targetTabBtn.click();
   }
 });

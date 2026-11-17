@@ -1,5 +1,5 @@
-// Interactive Ear Anatomy & Pressure Simulation (KHTN 8)
-// Models human ear anatomy, sound transmission, and sudden pressure changes during flight (Takeoff & Landing)
+// Interactive Human Ear Anatomy & 3D WebGL Simulation (KHTN 8)
+// Real-time 3D anatomical model (Three.js), sound transmission, and sudden pressure changes during flight (Takeoff & Landing)
 
 const EAR_PARTS = [
   {
@@ -10,8 +10,7 @@ const EAR_PARTS = [
     badgeDesc: "Hứng âm thanh",
     color: "#f59e0b",
     colorLight: "#fbbf24",
-    xPercent: 19.6,
-    yPercent: 27.3,
+    pos3D: new THREE.Vector3(-0.84, 0.16, 0.03),
     arrowSide: "right", // arrow starts from badge right edge
     soundOrder: 1,
     role: "Nằm ngoài cùng, hứng sóng âm từ môi trường xung quanh. Hướng âm thanh vào ống tai.",
@@ -25,8 +24,7 @@ const EAR_PARTS = [
     badgeDesc: "Dẫn âm thanh",
     color: "#0284c7",
     colorLight: "#38bdf8",
-    xPercent: 40.7,
-    yPercent: 47.0,
+    pos3D: new THREE.Vector3(-0.55, -0.05, 0.22),
     arrowSide: "right",
     soundOrder: 2,
     role: "Dẫn sóng âm đến màng nhĩ. Không khí trong ống tai thông với bên ngoài, nên áp suất ở đây bằng áp suất khí quyển bên ngoài.",
@@ -40,8 +38,7 @@ const EAR_PARTS = [
     badgeDesc: "Ngăn ống tai và tai giữa",
     color: "#ec4899",
     colorLight: "#f472b6",
-    xPercent: 52.3,
-    yPercent: 47.0,
+    pos3D: new THREE.Vector3(0.19, 0.08, 0.34),
     arrowSide: "right",
     soundOrder: 3,
     role: "Màng mỏng ngăn cách ống tai với tai giữa, rung động khi có sóng âm. Một mặt chịu áp suất từ ống tai (áp suất ngoài), mặt kia chịu áp suất từ tai giữa. Nếu áp suất hai mặt chênh lệch đột ngột, màng nhĩ bị đẩy về phía có áp suất nhỏ hơn.",
@@ -55,8 +52,7 @@ const EAR_PARTS = [
     badgeDesc: "búa • đe • bàn đạp",
     color: "#a855f7",
     colorLight: "#c084fc",
-    xPercent: 59.3,
-    yPercent: 45.9,
+    pos3D: new THREE.Vector3(0.12, 0.19, 0.18),
     arrowSide: "bottom", // starts from bottom edge of top-center badge
     soundOrder: 4,
     role: "Ba xương nhỏ nhất cơ thể nằm trong tai giữa. Nhận rung động từ màng nhĩ rồi truyền vào tai trong.",
@@ -70,8 +66,7 @@ const EAR_PARTS = [
     badgeDesc: "Dẫn tín hiệu lên não",
     color: "#ea580c",
     colorLight: "#fb923c",
-    xPercent: 70.2,
-    yPercent: 43.1,
+    pos3D: new THREE.Vector3(0.55, 0.17, 0.04),
     arrowSide: "left", // starts from left edge of right badges
     soundOrder: 6,
     role: "Nhận tín hiệu từ ốc tai. Truyền tín hiệu lên não để ta nhận biết âm thanh.",
@@ -85,8 +80,7 @@ const EAR_PARTS = [
     badgeDesc: "Tai trong",
     color: "#10b981",
     colorLight: "#34d399",
-    xPercent: 73.2,
-    yPercent: 49.8,
+    pos3D: new THREE.Vector3(0.44, 0.17, 0.21),
     arrowSide: "left",
     soundOrder: 5,
     role: "Nằm ở tai trong, có hình xoắn ốc chứa dịch. Biến rung động thành tín hiệu thần kinh.",
@@ -100,8 +94,7 @@ const EAR_PARTS = [
     badgeDesc: "Cân bằng áp suất",
     color: "#06b6d4",
     colorLight: "#22d3ee",
-    xPercent: 76.6,
-    yPercent: 68.5,
+    pos3D: new THREE.Vector3(0.71, -0.31, 0.45),
     arrowSide: "left",
     soundOrder: 0,
     role: "Ống nối tai giữa với vòm mũi – họng. Có nhiệm vụ điều hòa và cân bằng áp suất hai bên màng nhĩ. Thường đóng; khi nuốt hoặc ngáp thì mở rộng cho không khí đi vào (hoặc ra) tai giữa.",
@@ -114,18 +107,14 @@ class EarSimulation {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
     this.viewport = document.getElementById('ear3DViewport');
-    this.stageEl = document.getElementById('ear3DStage');
-    this.modelContainer = document.getElementById('ear3DModelContainer');
+    this.webglMount = document.getElementById('earWebGLMount');
     this.calloutsContainer = document.getElementById('earCalloutsContainer');
-
-    // 2D Zoom State
-    this.zoom = 1.0; // 0.75 to 1.8
-
-    // Annotations visibility (HUD toggle)
-    this.showCallouts = true;
 
     // Sub-mode: 'anatomy' (Tìm hiểu bộ phận) or 'pressure' (Máy bay cất/hạ cánh)
     this.subMode = 'anatomy';
+
+    // HUD annotations visibility toggle
+    this.showCallouts = true;
 
     // Exploration tracker
     this.exploredParts = new Set();
@@ -146,20 +135,370 @@ class EarSimulation {
     // Eustachian Tube Airflow State
     this.isEustachianOpen = false;
     this.eustachianParticles = [];
-    this.initEustachianParticles(30);
+    this.initEustachianParticles(32);
 
     // Sound wave traveling animation
     this.isAcousticPlaying = false;
     this.acousticProgress = 0;
 
+    // Three.js 3D Objects
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.controls = null;
+    this.modelGroup = null;
+    this.eardrumMesh3D = null;
+    this.pinMeshes = [];
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+
+    // 3D Auto-sway & View State
+    this.isAutoSway = false;
+    this.swayTime = 0;
+    this.baseRotX = 0.0;
+    this.baseRotY = 0.0;
+
+    this.initThree();
+    this.load3DEarModel();
     this.bindEvents();
     this.resize();
-    this.updateTransform();
     this.initView();
     this.startLoop();
   }
 
-  initEustachianParticles(count) {
+  // -------------------------------------------------------------
+  // THREE.JS 3D SCENE & LIGHTING SETUP
+  // -------------------------------------------------------------
+  initThree() {
+    if (!this.webglMount) return;
+
+    // 1. Scene
+    this.scene = new THREE.Scene();
+
+    // 2. Camera: FOV 36 for natural medical perspective
+    const rect = this.viewport.getBoundingClientRect();
+    const aspect = (rect.width || 800) / (rect.height || 520);
+    this.camera = new THREE.PerspectiveCamera(36, aspect, 0.1, 50);
+    this.camera.position.set(0, -0.05, 4.2);
+
+    // 3. Renderer with transparent background (revealing CSS medical teal gradient)
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    this.renderer.setSize(rect.width || 800, rect.height || 520);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    this.webglMount.innerHTML = '';
+    this.webglMount.appendChild(this.renderer.domElement);
+
+    // 4. Studio Medical Lighting matching user reference (clean, pure anatomical true-color rendering)
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.20);
+    keyLight.position.set(2.0, 3.5, 4.0);
+    keyLight.castShadow = true;
+    this.scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.10);
+    fillLight.position.set(-3.0, -2.0, 2.5);
+    this.scene.add(fillLight);
+
+    // 5. OrbitControls: Smooth, responsive 3D mouse rotation, zooming & orbit
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.rotateSpeed = 0.85;
+    this.controls.zoomSpeed = 0.95;
+    this.controls.minDistance = 1.8;
+    this.controls.maxDistance = 7.0;
+    this.controls.maxPolarAngle = Math.PI * 0.92;
+    this.controls.minPolarAngle = Math.PI * 0.08;
+    this.controls.target.set(0, 0, 0);
+
+    // When student drags, pause auto-sway
+    this.controls.addEventListener('start', () => {
+      this.isDragging = true;
+    });
+    this.controls.addEventListener('end', () => {
+      this.isDragging = false;
+    });
+  }
+
+  // -------------------------------------------------------------
+  // -------------------------------------------------------------
+  // LOAD REAL 3D EAR ANATOMICAL MODEL (Sketchfab PBR Reconstructed)
+  // + REALISTIC FLIGHT PRESSURE EARDRUM MODELS (catcanh.glb & hacanh.glb)
+  // -------------------------------------------------------------
+  load3DEarModel() {
+    this.modelGroup = new THREE.Group();
+    this.pinMeshes = [];
+    this.interactiveMeshes = [];
+    this.meshNormal = null;
+    this.meshTakeoff = null;
+    this.meshLanding = null;
+
+    const loader = new THREE.GLTFLoader();
+
+    const buildFull3DModel = (gltf) => {
+      const earRoot = new THREE.Group();
+      this.earRoot = earRoot;
+      const raw = gltf.scene;
+      this.meshNormal = raw;
+
+      // 1. Center and scale authentic model to fit viewport cleanly
+      const box = new THREE.Box3().setFromObject(raw);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const targetScale = 2.6 / (size.x || 1.1);
+      this.modelScale = targetScale;
+      this.modelCenter = center;
+
+      raw.scale.set(-targetScale, targetScale, targetScale);
+      raw.position.set(center.x * targetScale, -center.y * targetScale, -center.z * targetScale);
+
+      // Process all anatomical meshes from GLB with authentic textures or vertex colors
+      raw.traverse(c => {
+        if (!c.isMesh) return;
+        c.castShadow = true;
+        c.receiveShadow = true;
+        if (c.material) {
+          c.material.side = THREE.DoubleSide;
+          if (c.geometry && c.geometry.attributes && c.geometry.attributes.color) {
+            c.material.vertexColors = true;
+          } else {
+            c.material.vertexColors = false;
+          }
+          c.material.roughness = 0.55;
+          c.material.metalness = 0.05;
+          if (c.material.map) {
+            c.material.map.encoding = THREE.sRGBEncoding;
+            c.material.needsUpdate = true;
+          }
+        }
+        this.interactiveMeshes.push(c);
+      });
+
+      earRoot.add(raw);
+
+      // 2. 3D Landmark Hotspot Pins & Sprites
+      EAR_PARTS.forEach(p => {
+        const pinGeo = new THREE.SphereGeometry(0.046, 24, 24);
+        const pinColor = new THREE.Color(p.color);
+        const pinMat = new THREE.MeshStandardMaterial({
+          color: pinColor,
+          roughness: 0.22,
+          metalness: 0.15,
+          emissive: pinColor,
+          emissiveIntensity: 0.45
+        });
+        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+        pinMesh.position.copy(p.pos3D);
+        pinMesh.userData = { partId: p.id, baseColor: pinColor };
+        earRoot.add(pinMesh);
+        this.pinMeshes.push(pinMesh);
+        this.interactiveMeshes.push(pinMesh);
+        p.pinMesh = pinMesh;
+
+        // Glowing Outline Ring
+        const ringGeo = new THREE.RingGeometry(0.056, 0.072, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.85
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.copy(p.pos3D);
+        ringMesh.position.z += 0.005;
+        earRoot.add(ringMesh);
+        p.ringMesh = ringMesh;
+      });
+
+      // Center ear assembly in viewport
+      earRoot.position.set(0, 0, 0);
+      this.modelGroup.add(earRoot);
+
+      this.modelGroup.rotation.y = this.baseRotY;
+      this.modelGroup.rotation.x = this.baseRotX;
+      this.scene.add(this.modelGroup);
+      console.log("Reconstructed 3D Ear Anatomy Model loaded and initialized successfully!");
+
+      // 3. Load Authentic Deformed Eardrum Models (catcanh.glb & hacanh.glb)
+      const setupVariantMesh = (variantGltf, type) => {
+        const variantRaw = variantGltf.scene;
+        variantRaw.scale.set(-this.modelScale, this.modelScale, this.modelScale);
+        variantRaw.position.set(this.modelCenter.x * this.modelScale, -this.modelCenter.y * this.modelScale, -this.modelCenter.z * this.modelScale);
+        variantRaw.traverse(c => {
+          if (!c.isMesh) return;
+          c.castShadow = true;
+          c.receiveShadow = true;
+          if (c.material) {
+            c.material.side = THREE.DoubleSide;
+            if (c.geometry && c.geometry.attributes && c.geometry.attributes.color) {
+              c.material.vertexColors = true;
+            } else {
+              c.material.vertexColors = false;
+            }
+            c.material.roughness = 0.55;
+            c.material.metalness = 0.05;
+            if (c.material.map) {
+              c.material.map.encoding = THREE.sRGBEncoding;
+              c.material.needsUpdate = true;
+            }
+          }
+        });
+        variantRaw.visible = false;
+        earRoot.add(variantRaw);
+        if (type === 'takeoff') {
+          this.meshTakeoff = variantRaw;
+          console.log("Realistic Takeoff (catcanh.glb) eardrum model loaded successfully!");
+        } else if (type === 'landing') {
+          this.meshLanding = variantRaw;
+          console.log("Realistic Landing (hacanh.glb) eardrum model loaded successfully!");
+        }
+        this.updateFlightModel();
+      };
+
+      const loadVariant = (url, b64Data, type) => {
+        const parseB64 = () => {
+          if (!b64Data) return;
+          try {
+            let buffer;
+            if (typeof Uint8Array.fromBase64 === 'function') {
+              buffer = Uint8Array.fromBase64(b64Data).buffer;
+            } else {
+              const chunkSize = 65536;
+              const chunks = [];
+              for (let i = 0; i < b64Data.length; i += chunkSize) {
+                const bin = atob(b64Data.slice(i, i + chunkSize));
+                const u8 = new Uint8Array(bin.length);
+                for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
+                chunks.push(u8);
+              }
+              const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+              const fullU8 = new Uint8Array(totalLen);
+              let off = 0;
+              for (const c of chunks) {
+                fullU8.set(c, off);
+                off += c.length;
+              }
+              buffer = fullU8.buffer;
+            }
+            loader.parse(fullU8.buffer, '', (gltf) => {
+              setupVariantMesh(gltf, type);
+            }, (err) => console.error(`Error parsing ${type} base64:`, err));
+          } catch(e) {
+            console.error(`Failed base64 ${type}:`, e);
+          }
+        };
+
+        loader.load(url, (gltf) => {
+          setupVariantMesh(gltf, type);
+        }, undefined, () => {
+          parseB64();
+        });
+      };
+
+      loadVariant('catcanh.glb', window.CATCANH_GLB_BASE64, 'takeoff');
+      loadVariant('hacanh.glb', window.HACANH_GLB_BASE64, 'landing');
+    };
+
+    const parseBase64 = () => {
+      const b64 = window.EAR_GLB_BASE64 || window.EAR_MODEL_GLB_BASE64;
+      if (b64) {
+        try {
+          let buffer;
+          if (typeof Uint8Array.fromBase64 === 'function') {
+            buffer = Uint8Array.fromBase64(b64).buffer;
+          } else {
+            const chunkSize = 65536;
+            const chunks = [];
+            for (let i = 0; i < b64.length; i += chunkSize) {
+              const slice = b64.slice(i, i + chunkSize);
+              const bin = atob(slice);
+              const u8 = new Uint8Array(bin.length);
+              for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
+              chunks.push(u8);
+            }
+            const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+            const fullU8 = new Uint8Array(totalLen);
+            let off = 0;
+            for (const c of chunks) {
+              fullU8.set(c, off);
+              off += c.length;
+            }
+            buffer = fullU8.buffer;
+          }
+          loader.parse(buffer, '', (gltf) => {
+            buildFull3DModel(gltf);
+          }, (err) => {
+            console.error("Base64 GLTF parse error:", err);
+          });
+        } catch (e) {
+          console.error("Failed to parse base64 glb:", e);
+        }
+      }
+    };
+
+    // Try direct fetch first (for local web server), fallback to base64 (for file:// protocol)
+    loader.load(
+      'ear_model.glb',
+      (gltf) => {
+        buildFull3DModel(gltf);
+      },
+      undefined,
+      (err) => {
+        loader.load(
+          'human_ear_anatomy.glb',
+          (gltf) => {
+            buildFull3DModel(gltf);
+          },
+          undefined,
+          (err2) => {
+            console.warn("Direct GLB load unavailable, loading offline base64 model:", err2);
+            parseBase64();
+          }
+        );
+      }
+    );
+  }
+
+  // -------------------------------------------------------------
+  // UPDATE FLIGHT 3D MODEL (Switching Normal, Takeoff, Landing Models)
+  // -------------------------------------------------------------
+  updateFlightModel() {
+    if (!this.meshNormal) return;
+
+    let target = 'normal';
+    if (this.subMode === 'pressure') {
+      // In flight pressure mode:
+      // Stage 1 = Cân bằng (mô hình chuẩn phẳng)
+      // Stage 2 = Áp suất đổi (mô hình màng nhĩ biến dạng thực tế)
+      // Stage 3 = Tiếng động lạ / Ù tai (mô hình màng nhĩ biến dạng thực tế)
+      // Stage 4 = Nuốt / ngáp (mô hình biến dạng cho tới khi học sinh bấm nút Nuốt/Ngáp)
+      const isDeformed = (this.stage === 2 || this.stage === 3 || (this.stage === 4 && !this.isEqualized));
+      if (isDeformed) {
+        if (this.flightType === 'takeoff' && this.meshTakeoff) {
+          target = 'takeoff';
+        } else if (this.flightType === 'landing' && this.meshLanding) {
+          target = 'landing';
+        }
+      }
+    }
+
+    this.meshNormal.visible = (target === 'normal');
+    if (this.meshTakeoff) this.meshTakeoff.visible = (target === 'takeoff');
+    if (this.meshLanding) this.meshLanding.visible = (target === 'landing');
+
+    if (this.eardrumMesh3D) {
+      this.eardrumMesh3D.visible = false;
+    }
+  }
+
+
+    initEustachianParticles(count) {
     this.eustachianParticles = [];
     for (let i = 0; i < count; i++) {
       this.eustachianParticles.push({
@@ -172,21 +511,46 @@ class EarSimulation {
   }
 
   resize() {
-    if (!this.canvas || !this.viewport) return;
+    if (!this.viewport) return;
     const rect = this.viewport.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.width = rect.width;
     this.height = rect.height;
 
-    this.canvas.width = Math.round(rect.width * dpr);
-    this.canvas.height = Math.round(rect.height * dpr);
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.scale(dpr, dpr);
+    if (this.canvas && this.ctx) {
+      this.canvas.width = Math.round(rect.width * dpr);
+      this.canvas.height = Math.round(rect.height * dpr);
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.scale(dpr, dpr);
+    }
+
+    if (this.camera && this.renderer) {
+      this.camera.aspect = (rect.width || 800) / (rect.height || 520);
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(rect.width, rect.height);
+      this.renderer.setPixelRatio(dpr);
+    }
   }
 
   // -------------------------------------------------------------
-  // 2D VIEW CONTROLS (Chú thích, Zoom +, Zoom -, 100%)
+  // 3D VIEW CONTROLS (Tự lắc, Chú thích, Zoom +, Zoom -, 100%)
   // -------------------------------------------------------------
+  toggleAutoSway() {
+    this.isAutoSway = !this.isAutoSway;
+    const btn = document.getElementById('btnAutoSway');
+    const label = document.getElementById('autoSwayLabel');
+    if (btn) {
+      if (this.isAutoSway) {
+        btn.classList.add('active');
+        if (label) label.textContent = 'Đang lắc...';
+      } else {
+        btn.classList.remove('active');
+        if (label) label.textContent = 'Tự lắc';
+      }
+    }
+    if (window.sound) window.sound.playClick();
+  }
+
   toggleAnnotations() {
     this.showCallouts = !this.showCallouts;
     const btn = document.getElementById('btnToggleAnnotations');
@@ -208,31 +572,36 @@ class EarSimulation {
   }
 
   zoomIn() {
-    this.zoom = Math.min(1.8, this.zoom + 0.15);
-    this.updateTransform();
+    if (!this.camera) return;
+    this.camera.position.z = Math.max(2.2, this.camera.position.z - 0.4);
     if (window.sound) window.sound.playClick();
   }
 
   zoomOut() {
-    this.zoom = Math.max(0.75, this.zoom - 0.15);
-    this.updateTransform();
+    if (!this.camera) return;
+    this.camera.position.z = Math.min(6.5, this.camera.position.z + 0.4);
     if (window.sound) window.sound.playClick();
   }
 
   resetZoom() {
-    this.zoom = 1.0;
-    this.updateTransform();
-    if (window.sound) window.sound.playClick();
+    this.reset3DView();
   }
 
-  updateTransform() {
-    if (!this.stageEl) return;
-    this.stageEl.style.transform = `scale(${this.zoom.toFixed(3)})`;
-  }
-
-  // Backwards compatibility for app.js calls
   update3DTransform() {
-    this.updateTransform();
+    this.resize();
+  }
+
+  reset3DView() {
+    if (!this.camera || !this.controls || !this.modelGroup) return;
+    this.camera.position.set(0, -0.05, 4.2);
+    this.controls.target.set(0, 0, 0);
+    this.modelGroup.rotation.set(this.baseRotX, this.baseRotY, 0);
+    this.isAutoSway = false;
+    const btn = document.getElementById('btnAutoSway');
+    const label = document.getElementById('autoSwayLabel');
+    if (btn) btn.classList.remove('active');
+    if (label) label.textContent = 'Tự lắc';
+    if (window.sound) window.sound.playClick();
   }
 
   // -------------------------------------------------------------
@@ -265,9 +634,9 @@ class EarSimulation {
       bNum.style.background = '#0284c7';
       bNum.style.color = '#ffffff';
     }
-    if (bTitle) bTitle.textContent = 'Khám Phá 7 Bộ Phận Của Tai';
-    if (bLatin) bLatin.textContent = 'Bấm vào điểm (1 - 7) trên mô hình để bắt đầu';
-    if (bRole) bRole.textContent = 'Hãy bấm vào các điểm số (1 - 7) trên mô hình giải phẫu tai để tìm hiểu cấu tạo và chức năng từng bộ phận!';
+    if (bTitle) bTitle.textContent = 'Khám Phá 7 Bộ Phận Của Tai (Mô Hình 3D)';
+    if (bLatin) bLatin.textContent = 'Kéo chuột để xoay 3D • Cuộn chuột để phóng to/thu nhỏ • Bấm điểm (1 - 7)';
+    if (bRole) bRole.textContent = 'Hãy xoay mô hình 3D và bấm vào các điểm số (1 - 7) để tìm hiểu cấu tạo và chức năng từng bộ phận!';
     if (bDetails) bDetails.textContent = 'Đường truyền âm thanh: Vành tai → Ống tai → Rung màng nhĩ → Chuỗi xương con → Ốc tai → Dây thần kinh thính giác → Não.';
     if (nextBtn) {
       nextBtn.innerHTML = '<span>Bắt đầu: 1. Vành tai →</span>';
@@ -300,11 +669,62 @@ class EarSimulation {
           checkEl.className = 'part-check font-bold text-xs text-slate-400';
         }
       }
+
+      if (p.pinMesh) {
+        p.pinMesh.material.emissiveIntensity = 0.40;
+        p.pinMesh.scale.set(1, 1, 1);
+      }
     });
   }
 
   // -------------------------------------------------------------
-  // ANATOMY SELECTION & TRACKING (Bấm vào bộ phận hiện thông tin)
+  // SUB-MODE SWITCHING ('anatomy' vs 'pressure')
+  // -------------------------------------------------------------
+  setSubMode(mode) {
+    if (mode === 'pressure' && !this.unlockedFlightMode && this.exploredParts.size < 7) {
+      if (window.sound) window.sound.playBuzz();
+      alert(`Bạn cần bấm tìm hiểu đủ 7 bộ phận của tai trước khi mở khóa mục "Vì sao có tiếng động trong tai"! (Hiện đã khám phá: ${this.exploredParts.size}/7)`);
+      return;
+    }
+
+    this.subMode = mode;
+    const tabAnat = document.getElementById('subTabAnatomy');
+    const tabPres = document.getElementById('subTabPressure');
+    const panelAnat = document.getElementById('panelAnatomyCard');
+    const panelPres = document.getElementById('panelPressureCard');
+
+    if (mode === 'anatomy') {
+      if (tabAnat) {
+        tabAnat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 text-white font-bold text-xs shadow-sm transition";
+      }
+      if (tabPres) {
+        tabPres.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition";
+      }
+      if (panelAnat) panelAnat.classList.remove('hidden');
+      if (panelPres) panelPres.classList.add('hidden');
+      if (this.eardrumMesh3D) this.eardrumMesh3D.visible = false;
+      this.isEustachianOpen = false;
+    } else {
+      if (tabAnat) {
+        tabAnat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition";
+      }
+      if (tabPres) {
+        tabPres.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold text-xs shadow-sm transition";
+      }
+      if (panelAnat) panelAnat.classList.add('hidden');
+      if (panelPres) panelPres.classList.remove('hidden');
+      if (this.eardrumMesh3D) this.eardrumMesh3D.visible = true;
+
+      this.setFlightType(this.flightType || 'landing');
+      this.setStage(1);
+    }
+    this.updateFlightModel();
+
+    if (window.sound) window.sound.playClick();
+  }
+
+  // -------------------------------------------------------------
+  // ANATOMY SELECTION & TRACKING
   // -------------------------------------------------------------
   selectPart(id) {
     this.selectedPartId = id;
@@ -313,11 +733,11 @@ class EarSimulation {
     const part = EAR_PARTS.find(p => p.id === id);
     if (!part) return;
 
-    // Show checkmark on the perimeter HUD badge
+    // Show checkmark on the 3D HUD badge
     const badgeCheck = document.getElementById(`badgeCheck-${id}`);
     if (badgeCheck) badgeCheck.classList.remove('hidden');
 
-    // Highlight active perimeter badge
+    // Highlight active 3D badge and pin
     EAR_PARTS.forEach(p => {
       const bEl = document.getElementById(`earBadge-${p.id}`);
       if (bEl) {
@@ -328,7 +748,6 @@ class EarSimulation {
         }
       }
 
-      // Highlight active pin on the diagram
       const pinEl = document.getElementById(`earPin-${p.id}`);
       if (pinEl) {
         if (p.id === id) {
@@ -337,9 +756,38 @@ class EarSimulation {
           pinEl.classList.remove('active');
         }
       }
+
+      // Highlight 3D mesh pin
+      if (p.pinMesh) {
+        if (p.id === id) {
+          p.pinMesh.material.emissiveIntensity = 0.95;
+          p.pinMesh.scale.set(1.35, 1.35, 1.35);
+        } else {
+          p.pinMesh.material.emissiveIntensity = 0.40;
+          p.pinMesh.scale.set(1, 1, 1);
+        }
+      }
     });
 
-    // 1. Update Below-Diagram Information Banner (Immediate, clear & non-overlapping)
+    // Update bottom info card
+    this.updateBottomInfoBanner(part);
+
+    // Update exploration progress
+    this.updateExplorationProgress();
+
+    if (window.sound) window.sound.playTone(320 + id * 60, 0.12, 'sine');
+  }
+
+  nextPart() {
+    if (!this.selectedPartId) {
+      this.selectPart(1);
+      return;
+    }
+    const nextId = (this.selectedPartId % 7) + 1;
+    this.selectPart(nextId);
+  }
+
+  updateBottomInfoBanner(part) {
     const banner = document.getElementById('earPartInfoBanner');
     const bNum = document.getElementById('bannerPartNum');
     const bTitle = document.getElementById('bannerPartTitle');
@@ -348,158 +796,107 @@ class EarSimulation {
     const bDetails = document.getElementById('bannerPartDetails');
     const nextBtn = document.getElementById('btnBannerNextPart');
 
-    if (banner && this.subMode === 'anatomy') {
+    if (banner) {
       banner.classList.remove('hidden');
       banner.style.borderTopColor = part.color;
     }
     if (bNum) {
       bNum.textContent = part.id;
       bNum.style.background = part.color;
+      bNum.style.color = '#ffffff';
     }
     if (bTitle) bTitle.textContent = `${part.id}. ${part.name}`;
     if (bLatin) bLatin.textContent = part.latin;
     if (bRole) bRole.textContent = part.role;
     if (bDetails) bDetails.textContent = part.details;
+
     if (nextBtn) {
-      const nextId = (id % 7) + 1;
+      const nextId = (part.id % 7) + 1;
       const nextPart = EAR_PARTS.find(p => p.id === nextId);
-      nextBtn.innerHTML = `<span>Tiếp theo: ${nextPart ? nextPart.name : ''} →</span>`;
+      nextBtn.innerHTML = `<span>Tiếp theo: ${nextId}. ${nextPart.name} →</span>`;
+      nextBtn.onclick = () => this.selectPart(nextId);
     }
+  }
 
-    // 2. Update Progress Tracking Checklist in Right Sidebar (Chỉ hiển thị trạng thái đã hoàn thành)
-    const progressBadge = document.getElementById('earProgressBadge');
-    const progressBar = document.getElementById('earProgressBar');
-    const progressText = document.getElementById('earProgressText');
-
+  updateExplorationProgress() {
     const count = this.exploredParts.size;
-    if (progressBadge) progressBadge.textContent = `${count} / 7 bộ phận`;
-    if (progressText) progressText.textContent = `${count} / 7 hoàn thành`;
-    if (progressBar) progressBar.style.width = `${(count / 7) * 100}%`;
+    const progressText = document.getElementById('earProgressText');
+    const progressBar = document.getElementById('earProgressBar');
+    const progressBadge = document.getElementById('earProgressBadge');
 
-    // Cập nhật trạng thái từng bộ phận trong danh sách theo dõi
+    if (progressText) progressText.textContent = `${count} / 7 hoàn thành`;
+    if (progressBar) progressBar.style.width = `${Math.round((count / 7) * 100)}%`;
+    if (progressBadge) progressBadge.textContent = `${count} / 7 bộ phận`;
+
+    // Cập nhật trạng thái từng dòng hiển thị tiến độ bên phải
     EAR_PARTS.forEach(p => {
       const itemEl = document.getElementById(`partStatus-${p.id}`);
-      if (!itemEl) return;
-      const checkEl = itemEl.querySelector('.part-check');
+      if (itemEl) {
+        const isExplored = this.exploredParts.has(p.id);
+        const isCurrent = (this.selectedPartId === p.id);
+        const checkEl = itemEl.querySelector('.part-check');
 
-      const isExplored = this.exploredParts.has(p.id);
-      const isSelected = (p.id === id);
-
-      if (isExplored) {
-        if (checkEl) {
-          checkEl.textContent = "✓";
-          checkEl.className = "part-check font-bold text-xs text-emerald-600";
+        if (isCurrent) {
+          itemEl.className = "part-status-item p-2 rounded-xl border-2 border-sky-500 bg-sky-50 text-sky-900 font-bold flex items-center justify-between shadow-sm transition";
+          if (checkEl) {
+            checkEl.textContent = '✓';
+            checkEl.className = 'part-check font-black text-xs text-sky-600';
+          }
+        } else if (isExplored) {
+          itemEl.className = "part-status-item p-2 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 font-medium flex items-center justify-between transition";
+          if (checkEl) {
+            checkEl.textContent = '✓';
+            checkEl.className = 'part-check font-black text-xs text-emerald-600';
+          }
+        } else {
+          itemEl.className = "part-status-item p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 flex items-center justify-between transition";
+          if (checkEl) {
+            checkEl.textContent = '○';
+            checkEl.className = 'part-check font-bold text-xs text-slate-400';
+          }
         }
-      } else {
-        if (checkEl) {
-          checkEl.textContent = "○";
-          checkEl.className = "part-check font-bold text-xs text-slate-400";
-        }
-      }
-
-      if (isSelected) {
-        itemEl.className = isExplored
-          ? "part-status-item p-2 rounded-xl border-2 border-sky-500 bg-sky-50 text-sky-950 font-bold flex items-center justify-between transition shadow-sm"
-          : "part-status-item p-2 rounded-xl border-2 border-sky-400 bg-sky-50/50 text-sky-900 font-semibold flex items-center justify-between transition";
-      } else if (isExplored) {
-        itemEl.className = "part-status-item p-2 rounded-xl border border-emerald-300 bg-emerald-50/70 text-emerald-950 font-semibold flex items-center justify-between transition";
-      } else {
-        itemEl.className = "part-status-item p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 flex items-center justify-between transition";
       }
     });
 
-    // Check if finished all 7
+    // Mở khóa phần áp suất khi hoàn thành đủ 7 bộ phận
     if (count === 7 && !this.unlockedFlightMode) {
       this.unlockedFlightMode = true;
       const unlockAlert = document.getElementById('flightUnlockedAlert');
       const lockBadge = document.getElementById('flightLockBadge');
+
       if (unlockAlert) unlockAlert.classList.remove('hidden');
       if (lockBadge) lockBadge.classList.add('hidden');
-      if (window.sound) window.sound.playSuccess();
-    } else {
-      if (window.sound) window.sound.playClick();
+
+      if (window.sound) window.sound.playFanfare();
     }
-  }
-
-  nextPart() {
-    const nextId = this.selectedPartId ? (this.selectedPartId % 7) + 1 : 1;
-    this.selectPart(nextId);
-  }
-
-  // Switch between Anatomy mode and Flight Pressure mode
-  setSubMode(mode) {
-    if (mode === 'pressure' && !this.unlockedFlightMode) {
-      alert('Vui lòng bấm tìm hiểu đủ 7 bộ phận của tai trước khi chuyển sang bước mô phỏng máy bay cất/hạ cánh!');
-      return;
-    }
-
-    this.subMode = mode;
-    const btnAnatomy = document.getElementById('subTabAnatomy');
-    const btnPressure = document.getElementById('subTabPressure');
-    const panelAnatomy = document.getElementById('panelAnatomyCard');
-    const panelPressure = document.getElementById('panelPressureCard');
-    const banner = document.getElementById('earPartInfoBanner');
-
-    if (mode === 'anatomy') {
-      if (btnAnatomy) btnAnatomy.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 text-white font-bold text-xs shadow-sm transition";
-      if (btnPressure) btnPressure.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition";
-      if (panelAnatomy) panelAnatomy.classList.remove('hidden');
-      if (panelPressure) panelPressure.classList.add('hidden');
-      if (banner) banner.classList.remove('hidden');
-    } else {
-      if (btnAnatomy) btnAnatomy.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition";
-      if (btnPressure) btnPressure.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs shadow-sm transition";
-      if (panelAnatomy) panelAnatomy.classList.add('hidden');
-      if (panelPressure) panelPressure.classList.remove('hidden');
-      if (banner) banner.classList.add('hidden');
-
-      this.setStage(1);
-    }
-
-    if (window.lucide) window.lucide.createIcons();
-    if (window.sound) window.sound.playClick();
-  }
-
-  // Play traveling acoustic sound wave animation
-  playAcousticWave() {
-    this.isAcousticPlaying = true;
-    this.acousticProgress = 0;
-    if (window.sound) window.sound.playAcousticSequence();
   }
 
   // -------------------------------------------------------------
-  // FLIGHT PRESSURE MODE: CẤT CÁNH / HẠ CÁNH (TAKEOFF / LANDING)
+  // FLIGHT SCENARIO TOGGLE (Takeoff vs Landing)
   // -------------------------------------------------------------
   setFlightType(type) {
-    this.flightType = type;
+    this.flightType = (type === 'takeoff') ? 'takeoff' : 'landing';
     const btnTakeoff = document.getElementById('btnFlightTakeoff');
     const btnLanding = document.getElementById('btnFlightLanding');
 
-    if (type === 'takeoff') {
+    if (this.flightType === 'takeoff') {
       if (btnTakeoff) {
-        btnTakeoff.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm";
+        btnTakeoff.className = "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-sm bg-sky-600 text-white";
       }
       if (btnLanding) {
-        btnLanding.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200";
+        btnLanding.className = "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-sm bg-transparent text-slate-600 hover:text-slate-800";
       }
     } else {
-      if (btnTakeoff) {
-        btnTakeoff.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200";
-      }
       if (btnLanding) {
-        btnLanding.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-sky-600 text-white shadow-sm";
+        btnLanding.className = "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-sm bg-amber-600 text-white";
+      }
+      if (btnTakeoff) {
+        btnTakeoff.className = "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-sm bg-transparent text-slate-600 hover:text-slate-800";
       }
     }
 
-    // Update Stage 1 & 2 Button text based on type
-    const s1Text = document.getElementById('stageText-1');
-    const s2Text = document.getElementById('stageText-2');
-    if (s1Text) s1Text.textContent = type === 'takeoff' ? "1️⃣ Cân bằng (Mặt đất)" : "1️⃣ Cân bằng (Trên cao)";
-    if (s2Text) s2Text.textContent = type === 'takeoff' ? "2️⃣ Cất cánh (Áp suất đổi)" : "2️⃣ Hạ cánh (Áp suất đổi)";
-
     this.setStage(1);
     if (window.sound) window.sound.playClick();
-    if (window.lucide) window.lucide.createIcons();
   }
 
   prevStage() {
@@ -518,670 +915,577 @@ class EarSimulation {
 
   setStage(stageNum) {
     this.stage = stageNum;
-    this.isEustachianOpen = false;
+    this.isEqualized = false;
 
-    // Reset equalized state if entering earlier stages
-    if (stageNum < 4) {
-      this.isEqualized = false;
+    // Update 4 quick pills
+    for (let i = 1; i <= 4; i++) {
+      const btn = document.getElementById(`stageBtn-${i}`);
+      if (btn) {
+        if (i === stageNum) {
+          btn.className = "stage-nav-pill active flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-sm transition";
+        } else {
+          btn.className = "stage-nav-pill flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition";
+        }
+      }
     }
 
-    const stageTitle = document.getElementById('flightStageTitle');
-    const stageDesc = document.getElementById('flightStageDesc');
-    const swallowBtn = document.getElementById('swallowActionBtn');
-    const stepIndicator = document.getElementById('stageStepIndicator');
+    const titleEl = document.getElementById('flightStageTitle');
+    const descEl = document.getElementById('flightStageDesc');
+    const outerPEl = document.getElementById('flightOuterP');
+    const innerPEl = document.getElementById('flightInnerP');
+    const deltaPEl = document.getElementById('flightDeltaP');
+    const badgeEl = document.getElementById('eardrumStateBadge');
+    const stepInd = document.getElementById('stageStepIndicator');
     const btnPrev = document.getElementById('btnPrevStage');
     const btnNext = document.getElementById('btnNextStage');
+    const swallowBtn = document.getElementById('swallowActionBtn');
 
-    // Update Step Indicator
-    if (stepIndicator) stepIndicator.textContent = `Giai đoạn ${stageNum} / 4`;
-    if (btnPrev) btnPrev.disabled = (stageNum <= 1);
-    if (btnNext) btnNext.disabled = (stageNum >= 4);
+    if (stepInd) stepInd.textContent = `Giai đoạn ${stageNum} / 4`;
+    if (btnPrev) btnPrev.disabled = (stageNum === 1);
+    if (btnNext) btnNext.disabled = (stageNum === 4);
 
-    // Update active stage buttons
-    document.querySelectorAll('.stage-step-btn').forEach((btn, idx) => {
-      if (idx + 1 === stageNum) {
-        btn.classList.add('bg-amber-100', 'border-amber-400', 'text-amber-950', 'font-bold');
+    const isLanding = (this.flightType === 'landing');
+
+    if (stageNum === 1) {
+      // 1. CÂN BẰNG
+      if (isLanding) {
+        this.pOuter = 80;
+        this.pInner = 80;
+        if (titleEl) titleEl.textContent = "1. Cân bằng: Máy bay bay ổn định trên cao";
+        if (descEl) descEl.textContent = "Trong khoang máy bay trên cao (độ cao ổn định), áp suất khoảng 80 kPa. Áp suất hai bên màng nhĩ bằng nhau (80 kPa = 80 kPa) nên màng nhĩ ở vị trí phẳng cân bằng, vòi tai đang đóng. Ta nghe rõ và không có tiếng động lạ.";
       } else {
-        btn.classList.remove('bg-amber-100', 'border-amber-400', 'text-amber-950', 'font-bold');
-      }
-    });
-
-    if (this.flightType === 'takeoff') {
-      // ==========================================
-      // KỊCH BẢN CẤT CÁNH (TAKEOFF): 101 -> 80 kPa
-      // Áp suất ngoài giảm đột ngột -> màng nhĩ bị đẩy phồng LỒI RA NGOÀI!
-      // ==========================================
-      if (stageNum === 1) {
-        // 1. Cân bằng ở mặt đất (101 = 101 kPa)
         this.pOuter = 101;
         this.pInner = 101;
-        this.targetDeform = 0;
-
-        if (stageTitle) stageTitle.textContent = "1. Cân bằng: Máy bay ở mặt đất";
-        if (stageDesc) stageDesc.textContent = "Tại sân bay mặt đất, áp suất không khí khoảng 101 kPa. Áp suất hai bên màng nhĩ bằng nhau (101 kPa = 101 kPa), màng nhĩ ở vị trí cân bằng phẳng, vòi tai đóng. Ta nghe bình thường.";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
-
-      } else if (stageNum === 2) {
-        // 2. Cất cánh: độ cao tăng nhanh, áp suất ngoài giảm đột ngột xuống 80 kPa
-        this.pOuter = 80;
-        this.pInner = 101;
-        this.targetDeform = 0.5; // Starts bulging outward!
-
-        if (stageTitle) stageTitle.textContent = "2. Cất cánh: Máy bay lên cao, áp suất ngoài giảm đột ngột";
-        if (stageDesc) stageDesc.textContent = "Máy bay lấy độ cao rất nhanh nên áp suất không khí bên ngoài (trong ống tai) giảm từ 101 xuống 80 kPa. Vòi tai chưa phản ứng kịp nên áp suất trong tai giữa vẫn còn 101 kPa.";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
-
-      } else if (stageNum === 3) {
-        // 3. Tiếng động / Ù tai: Trong > Ngoài -> màng nhĩ bị đẩy lồi ra ngoài!
-        this.pOuter = 80;
-        this.pInner = 101;
-        this.targetDeform = 1.0; // Bulges heavily outward (to the left toward canal)
-
-        if (stageTitle) stageTitle.textContent = "3. Tiếng động: Mất cân bằng áp suất → tiếng động trong tai";
-        if (stageDesc) stageDesc.textContent = "Áp suất ngoài (80 kPa) nhỏ hơn áp suất trong (101 kPa), lực ép từ bên trong đẩy màng nhĩ phồng lồi ra phía ngoài ống tai! Màng nhĩ bị căng phồng gây nên tiếng động lạo xạo hoặc triệu chứng ù tai, tức tai!";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
-
-        if (window.sound) window.sound.playEarPop();
-
-      } else if (stageNum === 4) {
-        // 4. Nuốt / Ngáp: Chờ học sinh bấm nút Nuốt/Ngáp màu xanh!
-        if (!this.isEqualized) {
-          this.pOuter = 80;
-          this.pInner = 101;
-          this.targetDeform = 1.0;
-
-          if (stageTitle) stageTitle.textContent = "4. Nuốt / ngáp: Mở vòi tai để cân bằng lại áp suất";
-          if (stageDesc) stageDesc.textContent = "👉 Vòi tai đang đóng nên khí chưa thoát ra được, màng nhĩ vẫn bị đẩy phồng lồi ra ngoài. Hãy bấm nút NUỐT / NGÁP màu xanh bên dưới để mở vòi tai, cho khí thừa thoát ra vòm họng cân bằng áp suất!";
-          if (swallowBtn) {
-            swallowBtn.disabled = false;
-            swallowBtn.className = "w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs shadow-lg ring-4 ring-emerald-300 animate-pulse transition flex items-center justify-center gap-2 cursor-pointer";
-            swallowBtn.innerHTML = '<span>🟢 BẤM VÀO ĐÂY ĐỂ NUỐT / NGÁP (Mở vòi tai)</span>';
-          }
-        } else {
-          this.pOuter = 80;
-          this.pInner = 80;
-          this.targetDeform = 0;
-          if (stageTitle) stageTitle.textContent = "4. Nuốt / ngáp: Đã cân bằng áp suất thành công!";
-          if (stageDesc) stageDesc.textContent = "🎉 Vòi tai mở rộng, khí thừa từ tai giữa thoát xuống vòm họng đưa áp suất về 80 kPa = 80 kPa. Màng nhĩ bật phẳng trở lại, tiếng ù tai biến mất!";
-        }
+        if (titleEl) titleEl.textContent = "1. Cân bằng: Máy bay chuẩn bị cất cánh ở mặt đất";
+        if (descEl) descEl.textContent = "Ở mặt đất, áp suất khí quyển là 101 kPa. Áp suất trong ống tai và tai giữa đều bằng 101 kPa. Màng nhĩ ở trạng thái phẳng cân bằng, vòi tai đang đóng kín tự nhiên.";
       }
 
-    } else {
-      // ==========================================
-      // KỊCH BẢN HẠ CÁNH (LANDING): 80 -> 101 kPa
-      // Áp suất ngoài tăng đột ngột -> màng nhĩ bị đẩy LÕM VÀO TRONG!
-      // ==========================================
-      if (stageNum === 1) {
-        // 1. Cân bằng trên cao (80 = 80 kPa)
+      this.targetDeform = 0;
+      this.isEustachianOpen = false;
+      if (swallowBtn) {
+        swallowBtn.disabled = true;
+        swallowBtn.classList.remove('animate-pulse');
+      }
+
+      if (badgeEl) {
+        badgeEl.textContent = "Màng nhĩ: Cân bằng phẳng (Bình thường)";
+        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+    }
+    else if (stageNum === 2) {
+      // 2. ÁP SUẤT ĐỔI
+      if (isLanding) {
+        this.pOuter = 101;
+        this.pInner = 80;
+        if (titleEl) titleEl.textContent = "2. Áp suất đổi: Máy bay hạ cánh, áp suất ngoài tăng";
+        if (descEl) descEl.textContent = "Máy bay hạ độ cao rất nhanh từ trên trời xuống đất: áp suất không khí bên ngoài tăng vọt từ 80 lên 101 kPa. Không khí bên ngoài tràn vào ống tai tức thì, trong khi vòi tai vẫn đóng nên tai giữa chưa kịp thích ứng (vẫn còn 80 kPa).";
+      } else {
         this.pOuter = 80;
-        this.pInner = 80;
-        this.targetDeform = 0;
+        this.pInner = 101;
+        if (titleEl) titleEl.textContent = "2. Áp suất đổi: Máy bay cất cánh bay lên cao, áp suất ngoài giảm";
+        if (descEl) descEl.textContent = "Máy bay lấy độ cao rất nhanh: áp suất không khí bên ngoài giảm nhanh từ 101 xuống còn 80 kPa. Áp suất trong ống tai giảm theo, trong khi áp suất trong tai giữa vẫn giữ mức 101 kPa ban đầu.";
+      }
 
-        if (stageTitle) stageTitle.textContent = "1. Cân bằng: Máy bay bay ổn định trên cao";
-        if (stageDesc) stageDesc.textContent = "Trong khoang máy bay trên cao, áp suất khoảng 80 kPa. Áp suất hai bên màng nhĩ bằng nhau (80 kPa = 80 kPa), màng nhĩ ở vị trí cân bằng phẳng, vòi tai đang đóng. Ta nghe bình thường.";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
+      this.targetDeform = 0.5;
+      this.isEustachianOpen = false;
+      if (swallowBtn) {
+        swallowBtn.disabled = true;
+        swallowBtn.classList.remove('animate-pulse');
+      }
 
-      } else if (stageNum === 2) {
-        // 2. Hạ cánh: độ cao giảm nhanh, áp suất ngoài tăng lên 101 kPa
+      if (badgeEl) {
+        badgeEl.textContent = isLanding ? "Màng nhĩ: Bắt đầu bị ép vào trong" : "Màng nhĩ: Bắt đầu bị đẩy phồng ra ngoài";
+        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300";
+      }
+    }
+    else if (stageNum === 3) {
+      // 3. TIẾNG ĐỘNG / Ù TAI
+      if (isLanding) {
         this.pOuter = 101;
         this.pInner = 80;
-        this.targetDeform = 0.5; // Starts pressing inward
+        if (titleEl) titleEl.textContent = "3. Mất cân bằng áp suất: Tiếng động trong tai / Ù tai!";
+        if (descEl) descEl.textContent = "Áp suất ngoài (101 kPa) LỚN HƠN áp suất trong (80 kPa), tạo lực ép mạnh đẩy màng nhĩ đột ngột lõm sâu về phía tai giữa! Sự biến dạng đột ngột này tạo nên cảm giác căng tức, tiếng 'bộp' hoặc triệu chứng ù tai.";
+      } else {
+        this.pOuter = 80;
+        this.pInner = 101;
+        if (titleEl) titleEl.textContent = "3. Mất cân bằng áp suất: Màng nhĩ phồng lồi ra ngoài → Tiếng 'bộp' / Ù tai!";
+        if (descEl) descEl.textContent = "Áp suất ngoài (80 kPa) NHỎ HƠN áp suất trong (101 kPa)! Không khí trong tai giữa nở ra đẩy màng nhĩ phồng lồi ra phía ngoài ống tai, gây căng tức màng nhĩ và sinh ra tiếng động lạ/ù tai!";
+      }
 
-        if (stageTitle) stageTitle.textContent = "2. Áp suất đổi: Máy bay hạ cánh, áp suất ngoài tăng đột ngột";
-        if (stageDesc) stageDesc.textContent = "Máy bay giảm độ cao rất nhanh nên áp suất không khí bên ngoài (trong ống tai) tăng từ 80 lên 101 kPa. Vòi tai chưa phản ứng kịp nên áp suất trong tai giữa vẫn còn 80 kPa.";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
+      this.targetDeform = 1.0;
+      this.isEustachianOpen = false;
+      if (swallowBtn) {
+        swallowBtn.disabled = true;
+        swallowBtn.classList.remove('animate-pulse');
+      }
 
-      } else if (stageNum === 3) {
-        // 3. Tiếng động / Ù tai: Ngoài > Trong -> màng nhĩ bị đẩy lõm vào trong!
-        this.pOuter = 101;
-        this.pInner = 80;
-        this.targetDeform = 1.0; // Heavily concave into middle ear
+      if (badgeEl) {
+        badgeEl.textContent = isLanding ? "⚠️ Màng nhĩ: LÕM SÂU VÀO TRONG (Ù TAI)" : "⚠️ Màng nhĩ: PHỒNG LỒI RA NGOÀI (Ù TAI)";
+        badgeEl.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse";
+      }
 
-        if (stageTitle) stageTitle.textContent = "3. Tiếng động: Mất cân bằng áp suất → tiếng động trong tai";
-        if (stageDesc) stageDesc.textContent = "Áp suất ngoài (101 kPa) lớn hơn áp suất trong (80 kPa), màng nhĩ đột ngột bị đẩy võng sâu vào phía trong tai giữa! Màng nhĩ bị căng lõm gây tiếng động hoặc triệu chứng ù tai, căng tức tai!";
-        if (swallowBtn) {
-          swallowBtn.disabled = true;
-          swallowBtn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-not-allowed";
-          swallowBtn.innerHTML = '<span>🗣️ NUỐT / NGÁP (Mở vòi tai cân bằng lại áp suất)</span>';
-        }
+      if (window.sound) {
+        window.sound.playTone(180, 0.35, 'sawtooth');
+        setTimeout(() => window.sound.playTone(2800, 0.45, 'sine'), 100);
+      }
+    }
+    else if (stageNum === 4) {
+      // 4. NUỐT / NGÁP (Học sinh chủ động bấm)
+      if (titleEl) titleEl.textContent = "4. Nuốt / ngáp: Mở vòi tai cân bằng lại áp suất!";
+      if (descEl) descEl.textContent = "Vòi tai đang đóng nên áp suất hai bên chưa thể cân bằng. Hãy bấm vào nút [🗣️ NUỐT / NGÁP] màu xanh bên dưới để mở vòi tai, cho luồng khí lưu thông cân bằng lại màng nhĩ!";
 
-        if (window.sound) window.sound.playEarPop();
+      this.targetDeform = 1.0;
+      this.isEustachianOpen = false;
+      if (swallowBtn) {
+        swallowBtn.disabled = false;
+        swallowBtn.classList.add('animate-pulse');
+      }
 
-      } else if (stageNum === 4) {
-        // 4. Nuốt / Ngáp: Chờ học sinh bấm nút Nuốt/Ngáp màu xanh!
-        if (!this.isEqualized) {
-          this.pOuter = 101;
-          this.pInner = 80;
-          this.targetDeform = 1.0;
-
-          if (stageTitle) stageTitle.textContent = "4. Nuốt / ngáp: Mở vòi tai để cân bằng lại áp suất";
-          if (stageDesc) stageDesc.textContent = "👉 Vòi tai đang đóng nên áp suất ngoài lớn hơn vẫn ép màng nhĩ lõm vào trong. Hãy bấm nút NUỐT / NGÁP màu xanh bên dưới để mở vòi tai, cho không khí từ vòm họng tràn vào tai giữa cân bằng áp suất!";
-          if (swallowBtn) {
-            swallowBtn.disabled = false;
-            swallowBtn.className = "w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs shadow-lg ring-4 ring-emerald-300 animate-pulse transition flex items-center justify-center gap-2 cursor-pointer";
-            swallowBtn.innerHTML = '<span>🟢 BẤM VÀO ĐÂY ĐỂ NUỐT / NGÁP (Mở vòi tai)</span>';
-          }
-        } else {
-          this.pOuter = 101;
-          this.pInner = 101;
-          this.targetDeform = 0;
-          if (stageTitle) stageTitle.textContent = "4. Nuốt / ngáp: Đã cân bằng áp suất thành công!";
-          if (stageDesc) stageDesc.textContent = "🎉 Vòi tai mở rộng! Không khí từ vòm họng tràn vào tai giữa, đưa áp suất tai giữa lên bằng 101 kPa. Màng nhĩ bật phẳng trở lại, tiếng ù tai biến mất!";
-        }
+      if (badgeEl) {
+        badgeEl.textContent = "👉 Hãy bấm nút [🗣️ NUỐT / NGÁP] bên dưới!";
+        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-900 border border-amber-400";
       }
     }
 
-    this.updatePressureTelemetry();
+    const delta = Math.abs(this.pOuter - this.pInner);
+    if (outerPEl) outerPEl.textContent = `${this.pOuter} kPa`;
+    if (innerPEl) innerPEl.textContent = `${this.pInner} kPa`;
+    if (deltaPEl) deltaPEl.textContent = `${delta} kPa`;
+
+    // Update 3D realistic eardrum model based on current stage & flight scenario
+    this.updateFlightModel();
   }
 
-  // Action: Nuốt hoặc Ngáp (Triggered when student clicks the green button in stage 4)
+  // Action khi học sinh bấm nút "Nuốt / Ngáp" ở giai đoạn 4
   doSwallowOrYawn() {
-    this.stage = 4;
     this.isEqualized = true;
     this.isEustachianOpen = true;
+    this.targetDeform = 0; // Màng nhĩ bật phẳng trở lại
 
-    // Equalize inner pressure to outer pressure!
+    // Đưa áp suất hai bên về cân bằng
     this.pInner = this.pOuter;
-    this.targetDeform = 0; // Springs back to flat
 
-    const stageTitle = document.getElementById('flightStageTitle');
-    const stageDesc = document.getElementById('flightStageDesc');
+    const titleEl = document.getElementById('flightStageTitle');
+    const descEl = document.getElementById('flightStageDesc');
+    const innerPEl = document.getElementById('flightInnerP');
+    const deltaPEl = document.getElementById('flightDeltaP');
+    const badgeEl = document.getElementById('eardrumStateBadge');
     const swallowBtn = document.getElementById('swallowActionBtn');
 
-    if (stageTitle) stageTitle.textContent = "4. Nuốt / ngáp: Đã cân bằng áp suất thành công!";
-    if (this.flightType === 'takeoff') {
-      if (stageDesc) stageDesc.textContent = "🎉 Vòi tai mở rộng! Khí nén thừa trong tai giữa theo vòi tai thoát xuống vòm họng, đưa áp suất trong tai giữa về 80 kPa. Màng nhĩ bật phẳng trở lại vị trí ban đầu, tiếng ù tai biến mất!";
-    } else {
-      if (stageDesc) stageDesc.textContent = "🎉 Vòi tai mở rộng! Không khí từ vòm họng theo vòi tai tràn lên tai giữa, đưa áp suất trong tai giữa lên bằng 101 kPa. Màng nhĩ bật phẳng trở lại vị trí ban đầu, tiếng ù tai biến mất!";
+    if (innerPEl) innerPEl.textContent = `${this.pInner} kPa`;
+    if (deltaPEl) deltaPEl.textContent = `0 kPa`;
+
+    const isLanding = (this.flightType === 'landing');
+
+    if (titleEl) titleEl.textContent = "4. Đã cân bằng: Màng nhĩ bật phẳng trở lại!";
+    if (descEl) {
+      if (isLanding) {
+        descEl.textContent = "Vòi tai đã mở! Không khí từ vòm mũi - họng tràn qua vòi tai vào tai giữa, đưa áp suất trong tai giữa lên bằng 101 kPa. Màng nhĩ bật phẳng trở lại vị trí bình thường, tiếng ù tai biến mất hoàn toàn!";
+      } else {
+        descEl.textContent = "Vòi tai đã mở! Không khí dư thừa trong tai giữa theo vòi tai thoát xuống họng, đưa áp suất tai giữa giảm về 80 kPa bằng áp suất bên ngoài. Màng nhĩ bật phẳng trở lại, tai nghe rõ ràng!";
+      }
+    }
+
+    if (badgeEl) {
+      badgeEl.textContent = "✅ Màng nhĩ: CÂN BẰNG PHẲNG HOÀN TOÀN (Nghe rõ)";
+      badgeEl.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300";
     }
 
     if (swallowBtn) {
-      swallowBtn.disabled = true;
-      swallowBtn.className = "w-full py-3 rounded-xl bg-emerald-700 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-2";
-      swallowBtn.innerHTML = '<span>✓ ĐÃ CÂN BẰNG ÁP SUẤT THÀNH CÔNG!</span>';
+      swallowBtn.classList.remove('animate-pulse');
     }
 
-    // Play swallow sound followed by ear pop chime
+    // Switch back to normal balanced 3D model
+    this.updateFlightModel();
+
     if (window.sound) {
-      window.sound.playSwallow();
-      setTimeout(() => {
-        window.sound.playEarPop();
-        window.sound.playSuccess();
-      }, 250);
-    }
-
-    this.updatePressureTelemetry();
-
-    // After 3.2 seconds, Eustachian tube naturally closes again
-    setTimeout(() => {
-      this.isEustachianOpen = false;
-    }, 3200);
-  }
-
-  updatePressureTelemetry() {
-    const outerPText = document.getElementById('flightOuterP');
-    const innerPText = document.getElementById('flightInnerP');
-    const deltaPText = document.getElementById('flightDeltaP');
-    const eardrumStateBadge = document.getElementById('eardrumStateBadge');
-
-    const delta = this.pOuter - this.pInner;
-
-    if (outerPText) outerPText.textContent = `${this.pOuter} kPa`;
-    if (innerPText) innerPText.textContent = `${this.pInner} kPa`;
-    if (deltaPText) {
-      deltaPText.textContent = `${delta > 0 ? '+' : ''}${delta} kPa`;
-      deltaPText.className = Math.abs(delta) > 5 ? "font-mono font-bold text-rose-600" : "font-mono font-bold text-emerald-600";
-    }
-
-    if (eardrumStateBadge) {
-      if (Math.abs(delta) < 2) {
-        eardrumStateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
-        eardrumStateBadge.textContent = "Màng nhĩ: Cân bằng phẳng (Bình thường)";
-      } else if (delta > 0) {
-        eardrumStateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300";
-        eardrumStateBadge.textContent = "Màng nhĩ: Bị đẩy lõm vào trong (Hạ cánh)";
-      } else {
-        eardrumStateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300";
-        eardrumStateBadge.textContent = "Màng nhĩ: Bị phồng lồi ra ngoài (Cất cánh)";
-      }
+      window.sound.playTone(450, 0.12, 'sine');
+      setTimeout(() => window.sound.playTone(650, 0.18, 'sine'), 120);
+      setTimeout(() => window.sound.playTone(950, 0.35, 'triangle'), 240);
     }
   }
 
   // -------------------------------------------------------------
-  // ANATOMICAL CURVED EUSTACHIAN TUBE AIRFLOW INTERPOLATION
+  // SOUND WAVE PROPAGATION ANIMATION (Phát sóng âm)
   // -------------------------------------------------------------
-  getTubePoint(progress, direction = 'landing') {
-    if (!this.canvas) return null;
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const container = this.modelContainer || document.getElementById('ear3DModelContainer');
-    if (!container) return null;
-    const cRect = container.getBoundingClientRect();
+  playAcousticWave() {
+    this.isAcousticPlaying = true;
+    this.acousticProgress = 0;
 
-    // 8 Spline percentage points following the exact mucosal lumen of Eustachian tube on ear_model.jpg
-    const tubeSpline = [
-      { x: 85.6, y: 87.4 }, // 0: Cuối vòi tai (lỗ hầu vòi tai ở vòm họng)
-      { x: 82.9, y: 79.7 }, // 1: Đoạn dưới vòi tai
-      { x: 78.6, y: 72.7 }, // 2: Đoạn giữa dưới
-      { x: 73.2, y: 65.7 }, // 3: Đoạn giữa vòi tai
-      { x: 67.1, y: 58.7 }, // 4: Đoạn giữa trên
-      { x: 61.0, y: 52.4 }, // 5: Cửa vào hòm nhĩ (tai giữa)
-      { x: 56.2, y: 48.7 }, // 6: Khoang hòm nhĩ
-      { x: 53.1, y: 47.0 }  // 7: Mặt trong màng nhĩ
-    ];
-
-    // Direction:
-    // 'landing': from nasopharynx (pt 0) up to eardrum (pt 7)
-    // 'takeoff': from eardrum (pt 7) down to nasopharynx (pt 0)
-    const pts = (direction === 'takeoff') ? [...tubeSpline].reverse() : tubeSpline;
-
-    // Convert to canvas coordinates
-    const canvasPts = pts.map(p => ({
-      x: cRect.left - canvasRect.left + (p.x / 100) * cRect.width,
-      y: cRect.top - canvasRect.top + (p.y / 100) * cRect.height
-    }));
-
-    // Calculate segment lengths
-    const segLens = [];
-    let totalLen = 0;
-    for (let i = 0; i < canvasPts.length - 1; i++) {
-      const d = Math.hypot(canvasPts[i+1].x - canvasPts[i].x, canvasPts[i+1].y - canvasPts[i].y);
-      segLens.push(d);
-      totalLen += d;
+    if (window.sound) {
+      window.sound.playTone(260, 0.1, 'sine');
+      setTimeout(() => window.sound.playTone(390, 0.1, 'sine'), 400);
+      setTimeout(() => window.sound.playTone(520, 0.1, 'sine'), 800);
+      setTimeout(() => window.sound.playTone(650, 0.1, 'sine'), 1200);
+      setTimeout(() => window.sound.playTone(850, 0.18, 'triangle'), 1600);
     }
-    if (totalLen === 0) return null;
-
-    // Target distance
-    const tDist = Math.max(0, Math.min(1, progress)) * totalLen;
-    let accumulated = 0;
-
-    for (let i = 0; i < segLens.length; i++) {
-      const d = segLens[i];
-      if (accumulated + d >= tDist || i === segLens.length - 1) {
-        const segT = d > 0 ? (tDist - accumulated) / d : 0;
-        const p1 = canvasPts[i];
-        const p2 = canvasPts[i+1];
-        return {
-          x: p1.x + (p2.x - p1.x) * segT,
-          y: p1.y + (p2.y - p1.y) * segT,
-          angle: Math.atan2(p2.y - p1.y, p2.x - p1.x)
-        };
-      }
-      accumulated += d;
-    }
-    return canvasPts[canvasPts.length - 1];
-  }
-
-  // Draw glowing curved Eustachian tube lumen and animated air particles
-  drawCurvedEustachianTube(ctx, canvasRect) {
-    const container = this.modelContainer || document.getElementById('ear3DModelContainer');
-    if (!container) return;
-    const cRect = container.getBoundingClientRect();
-
-    const tubeSpline = [
-      { x: 85.6, y: 87.4 },
-      { x: 82.9, y: 79.7 },
-      { x: 78.6, y: 72.7 },
-      { x: 73.2, y: 65.7 },
-      { x: 67.1, y: 58.7 },
-      { x: 61.0, y: 52.4 },
-      { x: 56.2, y: 48.7 },
-      { x: 53.1, y: 47.0 }
-    ];
-
-    const canvasPts = tubeSpline.map(p => ({
-      x: cRect.left - canvasRect.left + (p.x / 100) * cRect.width,
-      y: cRect.top - canvasRect.top + (p.y / 100) * cRect.height
-    }));
-
-    ctx.save();
-
-    // 1. Outer translucent green glow following the exact curve of the tube
-    ctx.strokeStyle = 'rgba(74, 222, 128, 0.25)';
-    ctx.lineWidth = 14;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    canvasPts.forEach((pt, i) => {
-      if (i === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.stroke();
-
-    // 2. Inner core line following the tube lumen curve
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 4.5;
-    ctx.stroke();
-
-    // 3. Flowing air particles traveling along the curved anatomical shape of the tube
-    this.eustachianParticles.forEach(p => {
-      const ptInfo = this.getTubePoint(p.progress, this.flightType);
-      if (!ptInfo) return;
-
-      // Perpendicular offset within tube lumen
-      const perpX = -Math.sin(ptInfo.angle) * p.offset;
-      const perpY = Math.cos(ptInfo.angle) * p.offset;
-      const px = ptInfo.x + perpX;
-      const py = ptInfo.y + perpY;
-
-      // Glow halo
-      ctx.fillStyle = 'rgba(74, 222, 128, 0.4)';
-      ctx.beginPath();
-      ctx.arc(px, py, p.size * 1.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Bright white core bubble
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(px, py, p.size, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // 4. Directional label along the tube
-    const midPt = canvasPts[3];
-    ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 12px "Be Vietnam Pro", sans-serif';
-    ctx.textAlign = 'left';
-    if (this.flightType === 'landing') {
-      ctx.fillText('↑ Luồng khí tràn từ vòm họng vào tai giữa!', midPt.x + 14, midPt.y);
-    } else {
-      ctx.fillText('↓ Khí thừa từ tai giữa thoát xuống vòm họng!', midPt.x + 14, midPt.y);
-    }
-
-    ctx.restore();
   }
 
   // -------------------------------------------------------------
-  // CANVAS RENDERING (Arrows, Sound Waves, Pressure Overlays)
+  // 2D CANVAS DRAWING (Arrows, Sound Waves & Overlays)
   // -------------------------------------------------------------
-  render() {
+  renderCanvasOverlays() {
+    if (!this.ctx || !this.viewport) return;
     const ctx = this.ctx;
-    const w = this.width;
-    const h = this.height;
-    if (!ctx || !w || !h || !this.viewport) return;
+    const canvasRect = this.viewport.getBoundingClientRect();
+    ctx.clearRect(0, 0, canvasRect.width, canvasRect.height);
 
-    ctx.clearRect(0, 0, w, h);
-
-    const canvasRect = this.canvas.getBoundingClientRect();
-
-    // 1. Draw Multicolored Connecting Arrows to Pins
-    if (this.showCallouts) {
-      this.drawCalloutArrows(ctx, canvasRect);
-    }
+    // 1. Sync 3D Pin positions to DOM and draw dynamic connecting arrows
+    this.update3DPinProjections(ctx, canvasRect);
 
     // 2. Sound Wave Traveling Animation
     if (this.isAcousticPlaying) {
       this.drawAcousticWaveFlow(ctx, canvasRect);
     }
 
-    // 3. Pressure mode overlays: Pressure vectors, Eardrum deformation & Eustachian airflow
+    // 3. Pressure Mode Overlays (Arrows & Eustachian Airflow)
     if (this.subMode === 'pressure') {
-      this.drawPressureModeOverlays(ctx, canvasRect);
+      this.drawFlightPressureEffects(ctx, canvasRect);
     }
   }
 
-  // Draw vibrant multicolored arrows connecting perimeter badges to diagram pins
-  drawCalloutArrows(ctx, canvasRect) {
+  // Project 3D positions to 2D screen coordinates and draw arrows
+  update3DPinProjections(ctx, canvasRect) {
+    if (!this.camera || !this.modelGroup) return;
+
     EAR_PARTS.forEach(part => {
-      const badgeEl = document.getElementById(`earBadge-${part.id}`);
       const pinEl = document.getElementById(`earPin-${part.id}`);
-      if (!badgeEl || !pinEl) return;
+      if (!pinEl || !part.pinMesh) return;
 
-      const bRect = badgeEl.getBoundingClientRect();
-      const pRect = pinEl.getBoundingClientRect();
+      // World position of 3D pin
+      const p3D = part.pinMesh.getWorldPosition(new THREE.Vector3());
+      p3D.project(this.camera);
 
-      // Start coordinate on badge border
-      let startX, startY;
-      if (part.arrowSide === 'right') {
-        startX = bRect.right - canvasRect.left;
-        startY = bRect.top + bRect.height * 0.5 - canvasRect.top;
-      } else if (part.arrowSide === 'bottom') {
-        startX = bRect.left + bRect.width * 0.5 - canvasRect.left;
-        startY = bRect.bottom - canvasRect.top;
-      } else {
-        // 'left'
-        startX = bRect.left - canvasRect.left;
-        startY = bRect.top + bRect.height * 0.5 - canvasRect.top;
+      // Clip if behind camera
+      if (p3D.z > 1.0) {
+        pinEl.style.display = 'none';
+        return;
       }
+      pinEl.style.display = 'flex';
 
-      // Pin center coordinate
-      const pinX = pRect.left + pRect.width * 0.5 - canvasRect.left;
-      const pinY = pRect.top + pRect.height * 0.5 - canvasRect.top;
+      // Screen pixel coordinates
+      const sx = (p3D.x * 0.5 + 0.5) * canvasRect.width;
+      const sy = (-p3D.y * 0.5 + 0.5) * canvasRect.height;
 
-      // Vector to pin
-      const dx = pinX - startX;
-      const dy = pinY - startY;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 15) return; // Too close
+      // Update DOM pin position
+      pinEl.style.left = `${sx}px`;
+      pinEl.style.top = `${sy}px`;
 
-      // Offset end by 14px so arrowhead meets the outer edge of pin
-      const targetX = pinX - (dx / dist) * 14;
-      const targetY = pinY - (dy / dist) * 14;
+      // Save for arrow rendering
+      part.screenX = sx;
+      part.screenY = sy;
+    });
 
-      const isSelected = (this.selectedPartId === part.id);
-      const strokeColor = isSelected ? '#fbbf24' : (part.colorLight || part.color);
+    // Draw connecting arrows if HUD is visible
+    if (this.showCallouts) {
+      EAR_PARTS.forEach(part => {
+        const badgeEl = document.getElementById(`earBadge-${part.id}`);
+        if (!badgeEl || part.screenX === undefined) return;
+
+        const bRect = badgeEl.getBoundingClientRect();
+        const vRect = canvasRect;
+
+        // Start coordinate from badge border
+        let startX, startY;
+        if (part.arrowSide === 'right') {
+          startX = (bRect.right - vRect.left);
+          startY = (bRect.top + bRect.bottom) / 2 - vRect.top;
+        } else if (part.arrowSide === 'bottom') {
+          startX = (bRect.left + bRect.right) / 2 - vRect.left;
+          startY = (bRect.bottom - vRect.top);
+        } else {
+          startX = (bRect.left - vRect.left);
+          startY = (bRect.top + bRect.bottom) / 2 - vRect.top;
+        }
+
+        const endX = part.screenX;
+        const endY = part.screenY;
+
+        const isCurrent = (this.selectedPartId === part.id);
+        const arrowColor = isCurrent ? '#fbbf24' : part.color;
+        const lineWidth = isCurrent ? 2.8 : 2.0;
+
+        ctx.save();
+        ctx.strokeStyle = arrowColor;
+        ctx.fillStyle = arrowColor;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Smooth cubic bezier line
+        const midX = (startX + endX) / 2;
+        const midY = (startY + endY) / 2;
+        let cp1x = midX;
+        let cp1y = startY;
+        let cp2x = midX;
+        let cp2y = endY;
+
+        if (part.id === 4) {
+          // Chuỗi xương con: graceful vertical curve from top-center badge down to pin
+          cp1x = startX;
+          cp1y = startY + (endY - startY) * 0.45;
+          cp2x = endX;
+          cp2y = endY - (endY - startY) * 0.35;
+        } else if (part.id === 3) {
+          // Màng nhĩ: sweep smoothly below ear canal to avoid crossing Pin 2
+          cp1x = startX + (endX - startX) * 0.55;
+          cp1y = startY;
+          cp2x = endX - 40;
+          cp2y = endY + 45;
+        }
+
+        // Calculate approach angle towards pin
+        const angle = Math.atan2(endY - cp2y, endX - cp2x);
+        const pinRadius = 14;
+        const targetX = endX - Math.cos(angle) * pinRadius;
+        const targetY = endY - Math.sin(angle) * pinRadius;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, targetX, targetY);
+        ctx.stroke();
+
+        // Arrow head ending cleanly at pin outer rim
+        const headLen = isCurrent ? 12 : 9;
+        ctx.beginPath();
+        ctx.moveTo(targetX, targetY);
+        ctx.lineTo(targetX - headLen * Math.cos(angle - Math.PI / 7), targetY - headLen * Math.sin(angle - Math.PI / 7));
+        ctx.lineTo(targetX - headLen * Math.cos(angle + Math.PI / 7), targetY - headLen * Math.sin(angle + Math.PI / 7));
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+  }
+
+  // Sound wave ripples
+  drawAcousticWaveFlow(ctx, canvasRect) {
+    const p1 = EAR_PARTS.find(p => p.id === 1);
+    const p2 = EAR_PARTS.find(p => p.id === 2);
+    const p3 = EAR_PARTS.find(p => p.id === 3);
+    const p4 = EAR_PARTS.find(p => p.id === 4);
+    const p6 = EAR_PARTS.find(p => p.id === 6);
+    const p5 = EAR_PARTS.find(p => p.id === 5);
+
+    if (!p1 || !p2 || !p3 || !p4 || !p6 || !p5) return;
+    const waypoints = [p1, p2, p3, p4, p6, p5];
+
+    const totalSegs = waypoints.length - 1;
+    const scaledProg = this.acousticProgress * totalSegs;
+    const currSeg = Math.min(totalSegs - 1, Math.floor(scaledProg));
+    const segT = scaledProg - currSeg;
+
+    const A = waypoints[currSeg];
+    const B = waypoints[currSeg + 1];
+
+    if (A.screenX && B.screenX) {
+      const curX = A.screenX + (B.screenX - A.screenX) * segT;
+      const curY = A.screenY + (B.screenY - A.screenY) * segT;
 
       ctx.save();
-      ctx.strokeStyle = strokeColor;
-      ctx.fillStyle = strokeColor;
-      ctx.lineWidth = isSelected ? 3.0 : 2.0;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      // Wave rings
+      for (let r = 1; r <= 3; r++) {
+        const radius = (r * 12) + (segT * 10);
+        const alpha = Math.max(0, 1 - (radius / 45));
+        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(curX, curY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
-      // Draw arrow line
+      // Energy core
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#0284c7';
+      ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(targetX, targetY);
+      ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Pressure mode overlays (Airflow along curved Eustachian tube & pressure vectors)
+  drawFlightPressureEffects(ctx, canvasRect) {
+    const eardrum = EAR_PARTS.find(p => p.id === 3);
+    const eustachian = EAR_PARTS.find(p => p.id === 7);
+    if (!eardrum || !eustachian || !eardrum.screenX || !eustachian.screenX) return;
+
+    // 1. Airflow stream along Eustachian tube during Stage 4
+    if (this.isEustachianOpen) {
+      const isLanding = (this.flightType === 'landing');
+      // Spline from throat (pin 7) to middle ear (pin 3)
+      const startX = eustachian.screenX;
+      const startY = eustachian.screenY;
+      const endX = eardrum.screenX + 20;
+      const endY = eardrum.screenY + 10;
+      const cpX = (startX + endX) / 2 + 15;
+      const cpY = (startY + endY) / 2;
+
+      ctx.save();
+      this.eustachianParticles.forEach(p => {
+        p.progress += 0.015 * p.speed;
+        if (p.progress > 1) p.progress = 0;
+
+        const t = isLanding ? p.progress : (1 - p.progress);
+        const oneMinusT = 1 - t;
+        // Quadratic bezier formula
+        const bx = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * cpX + t * t * endX;
+        const by = oneMinusT * oneMinusT * startY + 2 * oneMinusT * t * cpY + t * t * endY;
+
+        ctx.fillStyle = isLanding ? '#34d399' : '#38bdf8';
+        ctx.shadowColor = isLanding ? '#10b981' : '#0284c7';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(bx + p.offset, by, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // 2. Pressure vectors across eardrum in Stage 2 and 3
+    if (this.stage === 2 || this.stage === 3) {
+      const isLanding = (this.flightType === 'landing');
+      const edX = eardrum.screenX;
+      const edY = eardrum.screenY;
+
+      ctx.save();
+      // Outer ear canal pressure arrow (blue)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.fillStyle = '#38bdf8';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(edX - 45, edY);
+      ctx.lineTo(edX - 12, edY);
       ctx.stroke();
 
-      // Draw arrowhead triangle
-      const headLen = isSelected ? 12 : 9.5;
-      const angle = Math.atan2(dy, dx);
       ctx.beginPath();
-      ctx.moveTo(targetX, targetY);
-      ctx.lineTo(
-        targetX - headLen * Math.cos(angle - Math.PI / 6.5),
-        targetY - headLen * Math.sin(angle - Math.PI / 6.5)
-      );
-      ctx.lineTo(
-        targetX - headLen * Math.cos(angle + Math.PI / 6.5),
-        targetY - headLen * Math.sin(angle + Math.PI / 6.5)
-      );
+      ctx.moveTo(edX - 10, edY);
+      ctx.lineTo(edX - 20, edY - 6);
+      ctx.lineTo(edX - 20, edY + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner ear pressure arrow (amber/rose)
+      ctx.strokeStyle = '#f43f5e';
+      ctx.fillStyle = '#f43f5e';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(edX + 45, edY);
+      ctx.lineTo(edX + 12, edY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(edX + 10, edY);
+      ctx.lineTo(edX + 20, edY - 6);
+      ctx.lineTo(edX + 20, edY + 6);
       ctx.closePath();
       ctx.fill();
 
       ctx.restore();
-    });
-  }
-
-  // Draw acoustic traveling wave impulse through ear structures
-  drawAcousticWaveFlow(ctx, canvasRect) {
-    // Sound wave traveling path: 1. Vành tai -> 2. Ống tai -> 3. Màng nhĩ -> 4. Xương con -> 6. Ốc tai -> 5. Dây thần kinh
-    const partOrder = [1, 2, 3, 4, 6, 5];
-    const pts = [];
-
-    partOrder.forEach(pid => {
-      const pinEl = document.getElementById(`earPin-${pid}`);
-      if (pinEl) {
-        const r = pinEl.getBoundingClientRect();
-        pts.push({
-          x: r.left + r.width * 0.5 - canvasRect.left,
-          y: r.top + r.height * 0.5 - canvasRect.top
-        });
-      }
-    });
-
-    if (pts.length < 2) return;
-
-    ctx.save();
-
-    // Draw sound wave line
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    pts.forEach((pt, idx) => {
-      if (idx === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.stroke();
-
-    // Traveling wave pulse
-    const t = this.acousticProgress;
-    const totalSegs = pts.length - 1;
-    const currentSeg = Math.min(totalSegs - 1, Math.floor(t * totalSegs));
-    const segT = (t * totalSegs) - currentSeg;
-
-    const pA = pts[currentSeg];
-    const pB = pts[currentSeg + 1];
-    const waveX = pA.x + (pB.x - pA.x) * segT;
-    const waveY = pA.y + (pB.y - pA.y) * segT;
-
-    // Acoustic wave pulse
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(waveX, waveY, 7.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.0;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // Draw pressure arrows and bulging eardrum in pressure simulation mode
-  drawPressureModeOverlays(ctx, canvasRect) {
-    const pin3 = document.getElementById('earPin-3'); // Màng nhĩ
-    if (!pin3) return;
-
-    const r3 = pin3.getBoundingClientRect();
-    const eardrumX = r3.left + r3.width * 0.5 - canvasRect.left;
-    const eardrumY = r3.top + r3.height * 0.5 - canvasRect.top;
-
-    ctx.save();
-
-    // 1. Bulging Eardrum curve
-    // In Landing: outside > inside -> eardrum pushed inward (to the RIGHT toward middle ear)
-    // In Takeoff: inside > outside -> eardrum pushed outward (to the LEFT toward canal)
-    const deformDir = (this.flightType === 'takeoff') ? -1 : 1;
-    const arcX = eardrumX + (this.eardrumDeform * deformDir * 22);
-
-    ctx.strokeStyle = Math.abs(this.eardrumDeform) > 0.4 ? '#ef4444' : '#22c55e';
-    ctx.lineWidth = 4.0;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(eardrumX, eardrumY - 26);
-    ctx.quadraticCurveTo(arcX, eardrumY, eardrumX, eardrumY + 26);
-    ctx.stroke();
-
-    // 2. Pressure Vectors (Outside in Canal vs Inside in Middle ear)
-    // Outside pressure vector (in canal, pushing inward towards eardrum):
-    const outerLen = 35 * (this.pOuter / 101);
-    ctx.strokeStyle = this.pOuter > 90 ? '#ef4444' : '#38bdf8';
-    ctx.fillStyle = ctx.strokeStyle;
-    this.drawArrow(ctx, eardrumX - outerLen - 12, eardrumY, eardrumX - 10, eardrumY, 6);
-
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
-    ctx.fillText(`${this.pOuter} kPa`, eardrumX - outerLen - 20, eardrumY - 10);
-
-    // Inside pressure vector (in middle ear, pushing outward towards eardrum):
-    const innerLen = 35 * (this.pInner / 101);
-    ctx.strokeStyle = this.pInner > 90 ? '#ef4444' : '#38bdf8';
-    ctx.fillStyle = ctx.strokeStyle;
-    this.drawArrow(ctx, eardrumX + innerLen + 12, eardrumY, eardrumX + 10, eardrumY, 6);
-
-    ctx.fillText(`${this.pInner} kPa`, eardrumX + innerLen + 5, eardrumY - 10);
-
-    // 3. Eustachian Tube Airflow Animation (Curved anatomical path from throat to eardrum)
-    if (this.isEustachianOpen) {
-      this.drawCurvedEustachianTube(ctx, canvasRect);
     }
-
-    ctx.restore();
-  }
-
-  drawArrow(ctx, fromX, fromY, toX, toY, headlen = 6) {
-    const dx = toX - fromX;
-    const dy = toY - fromY;
-    const angle = Math.atan2(dy, dx);
-
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.lineWidth = 2.8;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(toX, toY);
-    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
-    ctx.closePath();
-    ctx.fill();
   }
 
   // -------------------------------------------------------------
-  // EVENT LISTENERS (Clean 2D, No 3D drag handlers)
+  // MOUSE & TOUCH EVENT LISTENERS (Orbit & Raycaster Pin Click)
   // -------------------------------------------------------------
   bindEvents() {
     window.addEventListener('resize', () => this.resize());
+
+    if (!this.viewport) return;
+
+    // Click on 3D Viewport Raycaster to select pin/part
+    this.viewport.addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('.ear-callout-badge')) return;
+
+      const rect = this.viewport.getBoundingClientRect();
+      this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      if (this.camera && this.interactiveMeshes && this.interactiveMeshes.length > 0) {
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const intersects = this.raycaster.intersectObjects(this.interactiveMeshes);
+        if (intersects.length > 0) {
+          const hit = intersects[0].object;
+          if (hit.userData && hit.userData.partId) {
+            this.selectPart(hit.userData.partId);
+          }
+        }
+      }
+    });
+
+    // Double-click to reset 3D camera
+    this.viewport.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button') || e.target.closest('.ear-callout-badge')) return;
+      this.reset3DView();
+    });
   }
 
   // -------------------------------------------------------------
   // ANIMATION LOOP (60 FPS)
   // -------------------------------------------------------------
   startLoop() {
-    let last = performance.now();
+    let lastTime = performance.now();
+
     const loop = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
 
-      // Smooth eardrum deformation spring
+      // 1. Controls update
+      if (this.controls) {
+        this.controls.update();
+      }
+
+      // 2. Auto-Sway smooth 3D oscillation
+      if (this.isAutoSway && !this.isDragging && this.modelGroup) {
+        this.swayTime += dt * 0.9;
+        this.modelGroup.rotation.y = this.baseRotY + Math.sin(this.swayTime) * 0.22;
+        this.modelGroup.rotation.x = this.baseRotX + Math.cos(this.swayTime * 0.7) * 0.06;
+      }
+
+      // 3. Realistic Eardrum Deformation & Physiological Tremor (Stage 3 Ù tai / Tiếng động)
       this.eardrumDeform += (this.targetDeform - this.eardrumDeform) * 8.0 * dt;
+      if (this.subMode === 'pressure' && this.stage === 3 && this.modelCenter && this.modelScale) {
+        const vibrate = Math.sin(now * 0.045) * 0.0022;
+        const baseY = -this.modelCenter.y * this.modelScale;
+        if (this.meshTakeoff && this.meshTakeoff.visible) {
+          this.meshTakeoff.position.y = baseY + vibrate;
+        }
+        if (this.meshLanding && this.meshLanding.visible) {
+          this.meshLanding.position.y = baseY + vibrate;
+        }
+      } else if (this.modelCenter && this.modelScale) {
+        const baseY = -this.modelCenter.y * this.modelScale;
+        if (this.meshTakeoff) this.meshTakeoff.position.y = baseY;
+        if (this.meshLanding) this.meshLanding.position.y = baseY;
+      }
 
-      // Acoustic wave progress
+      // 4. Acoustic wave progression
       if (this.isAcousticPlaying) {
-        this.acousticProgress += dt * 0.85;
+        this.acousticProgress += dt * 0.45;
         if (this.acousticProgress >= 1.0) {
           this.isAcousticPlaying = false;
           this.acousticProgress = 0;
         }
       }
 
-      // Eustachian particles flow along curved anatomical tube
-      if (this.isEustachianOpen) {
-        this.eustachianParticles.forEach(p => {
-          p.progress += dt * p.speed;
-          if (p.progress > 1) p.progress -= 1;
-        });
+      // 5. Render Three.js 3D WebGL Scene
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
       }
 
-      this.render();
+      // 6. Render 2D Overlays (Projected 3D Pins, Arrows & Particles)
+      this.renderCanvasOverlays();
+
       requestAnimationFrame(loop);
     };
+
     requestAnimationFrame(loop);
   }
 }
 
+// Global initialization
 window.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('ear3DViewport')) {
     window.earSim = new EarSimulation('earCanvas');

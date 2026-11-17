@@ -84,19 +84,15 @@
       </div>
     </div>
 
-    <!-- 3 Clean Tabs -->
+    <!-- 2 Clean Tabs -->
     <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold overflow-x-auto">
       <button class="nav-tab active flex items-center gap-2 px-3.5 py-2 rounded-xl transition" data-tab="practice">
         <i data-lucide="flask-conical" class="w-4 h-4 text-sky-600"></i>
-        <span>1. THÍ NGHIỆM THỦY LỰC (HÌNH 16.3 SGK)</span>
-      </button>
-      <button class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-xl transition" data-tab="application">
-        <i data-lucide="car" class="w-4 h-4 text-amber-600"></i>
-        <span>2. ỨNG DỤNG (MÁY NÂNG Ô TÔ)</span>
+        <span>1. THÍ NGHIỆM VỀ SỰ TRUYỀN ÁP SUẤT CỦA CHẤT LỎNG</span>
       </button>
       <button class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-xl transition" data-tab="ear-pressure">
         <i data-lucide="ear" class="w-4 h-4 text-rose-600"></i>
-        <span>3. TIẾNG ĐỘNG TRONG TAI (ÁP SUẤT ĐỘT NGỘT)</span>
+        <span>2. TIẾNG ĐỘNG TRONG TAI (ÁP SUẤT ĐỘT NGỘT)</span>
       </button>
     </div>
   </header>
@@ -114,25 +110,9 @@
         
         <!-- Practice Mode Actions -->
         <div id="practiceTopActions" class="flex items-center gap-2">
-          <button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm transition" onclick="sim.runSampleDemo()" title="Tự động đặt 4 quả bên trái và 2 quả bên phải">
-            <i data-lucide="play-circle" class="w-4 h-4"></i>
-            <span>▶️ Chạy mẫu</span>
-          </button>
           <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border border-slate-200 transition" onclick="sim.returnAllToRack()" title="Thu hồi các quả cân về lại khay">
             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
             <span>Cất hết về khay</span>
-          </button>
-        </div>
-
-        <!-- Application Mode Actions -->
-        <div id="applicationTopActions" class="hidden flex items-center gap-2">
-          <button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition" onclick="sim.pumpCarLift()">
-            <i data-lucide="chevrons-up" class="w-4 h-4"></i>
-            <span>BƠM KÍCH NÂNG XE (Gạt cần)</span>
-          </button>
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border border-slate-200 transition" onclick="sim.resetCarLift()">
-            <i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i>
-            <span>Xả van hạ xe</span>
           </button>
         </div>
 
@@ -341,69 +321,7 @@
         </div>
       </div>
 
-      <!-- ============================================== -->
-      <!-- TAB 2: ỨNG DỤNG THỰC TẾ (Car Lift & Real World) -->
-      <!-- ============================================== -->
-      <div id="panel-application" class="tab-panel hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-        <div class="flex items-center gap-2 pb-2 border-b border-slate-200 text-amber-700 font-bold text-sm">
-          <i data-lucide="car" class="w-4 h-4"></i>
-          <span>Ứng Dụng Thực Tế: Máy Nâng Ô Tô</span>
-        </div>
-
-        <!-- Interactive Car Lift Control Box -->
-        <div class="p-3.5 rounded-xl bg-gradient-to-b from-amber-50 to-orange-50 border border-amber-200 text-xs space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-amber-900 text-sm">Điều Khiển Trạm Nâng Ô Tô:</span>
-            <span class="text-xs bg-amber-200/80 text-amber-900 font-bold px-2 py-0.5 rounded-full" id="carHeightBadge">
-              Độ cao: 0.0 m
-            </span>
-          </div>
-          <p class="text-slate-600 leading-relaxed text-[11px]">
-            Bấm nút <strong>"BƠM KÍCH NÂNG XE"</strong> để tác dụng lực người thợ vào cần bơm nhỏ ($F_2 = 300\text{ N} \approx 30\text{ kg}$) nâng bổng chiếc ô tô 1.5 tấn ($F_1 = 15.000\text{ N}$):
-          </p>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-sm transition flex items-center justify-center gap-1.5" onclick="sim.pumpCarLift()">
-              <i data-lucide="chevrons-up" class="w-4 h-4"></i>
-              <span>BƠM KÍCH NÂNG XE</span>
-            </button>
-            <button class="py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-300 transition flex items-center justify-center gap-1.5" onclick="sim.resetCarLift()">
-              <i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i>
-              <span>Xả van hạ xe</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Real World Explanation Cards -->
-        <div class="space-y-2 text-xs">
-          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-            <h5 class="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>🚗 1. Tại sao lực nhỏ nâng được ô tô nặng?</span>
-            </h5>
-            <p class="text-slate-600 mt-1 leading-relaxed">
-              Vì diện tích bệ nâng lớn gấp 50 lần pít-tông bơm ($S_1 = 50 \cdot S_2$), nên theo định luật Pascal: lực nâng cũng được nhân lên gấp 50 lần ($F_1 = 50 \cdot F_2$)!
-            </p>
-          </div>
-
-          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-            <h5 class="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>🛑 2. Hệ thống phanh đĩa dầu xe máy, ô tô:</span>
-            </h5>
-            <p class="text-slate-600 mt-1 leading-relaxed">
-              Lực bóp tay nhẹ truyền qua đường ống dầu thủy lực tạo lực ép cực lớn lên đĩa phanh để dừng xe an toàn.
-            </p>
-          </div>
-
-          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-            <h5 class="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>📦 3. Máy ép thủy lực công nghiệp:</span>
-            </h5>
-            <p class="text-slate-600 mt-1 leading-relaxed">
-              Dùng để nén phế liệu kim loại, dập định hình vỏ xe, ép dầu thực vật với áp lực hàng trăm tấn.
-            </p>
-          </div>
-        </div>
-      </div>
-
+        
     </aside>
 
   </main>
@@ -445,6 +363,11 @@
           
           <!-- Top Left HUD Controls -->
           <div class="ear-hud-controls">
+            <button id="btnAutoSway" class="ear-hud-btn" onclick="earSim.toggleAutoSway()" title="Mô hình tự động xoay lắc nhẹ nhàng trong không gian 3D">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+              <span id="autoSwayLabel">Tự lắc</span>
+            </button>
+
             <button id="btnToggleAnnotations" class="ear-hud-btn active" onclick="earSim.toggleAnnotations()" title="Bật/tắt nhãn chú thích và mũi tên">
               <i data-lucide="tag" class="w-3.5 h-3.5"></i>
               <span>Chú thích</span>
@@ -454,42 +377,40 @@
             
             <button id="btnZoomOut" class="ear-hud-btn" style="width: 32px; padding: 6px 0;" onclick="earSim.zoomOut()" title="Thu nhỏ">-</button>
 
-            <button id="btnResetZoom" class="ear-hud-btn" style="padding: 6px 10px;" onclick="earSim.resetZoom()" title="Về kích thước chuẩn (100%)">100%</button>
+            <button id="btnResetZoom" class="ear-hud-btn" style="padding: 6px 10px;" onclick="earSim.resetZoom()" title="Về góc nhìn chuẩn 3D">100%</button>
           </div>
 
-          <!-- 2D Model Stage (Holds the clear anatomy image and the 7 pins) -->
-          <div id="ear3DStage" class="ear-3d-stage absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div id="ear3DModelContainer" class="relative pointer-events-none" style="width: 520px; max-width: 65%; aspect-ratio: 738 / 715;">
-              <img id="ear3DImg" src="ear_model.jpg" class="w-full h-full object-contain pointer-events-none select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.7)]" alt="Sơ đồ giải phẫu tai người">
+          <!-- 3D WebGL Canvas Mount Container -->
+          <div id="earWebGLMount" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-              <!-- 7 Anatomical Hotspot Pins on Model (Crisp, numbered, non-obscuring) -->
-              <div id="earPin-1" class="ear-3d-pin pointer-events-auto" style="left: 19.6%; top: 27.3%; background: #f59e0b;" onclick="earSim.selectPart(1)" title="1. Vành tai">
-                <span>1</span>
-              </div>
+          <!-- 3D Pin Hotspots Overlay (Projected in Real-Time 3D Space) -->
+          <div id="earPinsOverlay" class="absolute inset-0 pointer-events-none z-10">
+            <div id="earPin-1" class="ear-3d-pin pointer-events-auto" style="left: 37.4%; top: 44.0%; background: #f59e0b;" onclick="earSim.selectPart(1)" title="1. Vành tai">
+              <span>1</span>
+            </div>
 
-              <div id="earPin-2" class="ear-3d-pin pointer-events-auto" style="left: 40.7%; top: 47.0%; background: #0284c7;" onclick="earSim.selectPart(2)" title="2. Ống tai">
-                <span>2</span>
-              </div>
+            <div id="earPin-2" class="ear-3d-pin pointer-events-auto" style="left: 41.4%; top: 51.8%; background: #0284c7;" onclick="earSim.selectPart(2)" title="2. Ống tai">
+              <span>2</span>
+            </div>
 
-              <div id="earPin-3" class="ear-3d-pin pointer-events-auto" style="left: 52.3%; top: 47.0%; background: #ec4899;" onclick="earSim.selectPart(3)" title="3. Màng nhĩ">
-                <span>3</span>
-              </div>
+            <div id="earPin-3" class="ear-3d-pin pointer-events-auto" style="left: 53.1%; top: 46.7%; background: #ec4899;" onclick="earSim.selectPart(3)" title="3. Màng nhĩ">
+              <span>3</span>
+            </div>
 
-              <div id="earPin-4" class="ear-3d-pin pointer-events-auto" style="left: 59.3%; top: 45.9%; background: #a855f7;" onclick="earSim.selectPart(4)" title="4. Chuỗi xương con">
-                <span>4</span>
-              </div>
+            <div id="earPin-4" class="ear-3d-pin pointer-events-auto" style="left: 51.9%; top: 42.7%; background: #a855f7;" onclick="earSim.selectPart(4)" title="4. Chuỗi xương con">
+              <span>4</span>
+            </div>
 
-              <div id="earPin-5" class="ear-3d-pin pointer-events-auto" style="left: 70.2%; top: 43.1%; background: #ea580c;" onclick="earSim.selectPart(5)" title="5. Dây thần kinh thính giác">
-                <span>5</span>
-              </div>
+            <div id="earPin-5" class="ear-3d-pin pointer-events-auto" style="left: 58.3%; top: 43.6%; background: #ea580c;" onclick="earSim.selectPart(5)" title="5. Dây thần kinh thính giác">
+              <span>5</span>
+            </div>
 
-              <div id="earPin-6" class="ear-3d-pin pointer-events-auto" style="left: 73.2%; top: 49.8%; background: #10b981;" onclick="earSim.selectPart(6)" title="6. Ốc tai">
-                <span>6</span>
-              </div>
+            <div id="earPin-6" class="ear-3d-pin pointer-events-auto" style="left: 56.9%; top: 43.3%; background: #10b981;" onclick="earSim.selectPart(6)" title="6. Ốc tai">
+              <span>6</span>
+            </div>
 
-              <div id="earPin-7" class="ear-3d-pin pointer-events-auto" style="left: 76.6%; top: 68.5%; background: #06b6d4;" onclick="earSim.selectPart(7)" title="7. Vòi tai">
-                <span>7</span>
-              </div>
+            <div id="earPin-7" class="ear-3d-pin pointer-events-auto" style="left: 61.8%; top: 62.5%; background: #06b6d4;" onclick="earSim.selectPart(7)" title="7. Vòi tai">
+              <span>7</span>
             </div>
           </div>
 
@@ -507,8 +428,8 @@
                 <span id="badgeCheck-1" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Vành tai</span>
-                <span class="text-emerald-300 text-[10px]">Hứng âm thanh</span>
+                <span class="badge-title text-white font-bold text-xs">Vành tai</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Hứng âm thanh</span>
               </div>
             </div>
 
@@ -519,8 +440,8 @@
                 <span id="badgeCheck-2" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Ống tai</span>
-                <span class="text-emerald-300 text-[10px]">Dẫn âm thanh</span>
+                <span class="badge-title text-white font-bold text-xs">Ống tai</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Dẫn âm thanh</span>
               </div>
             </div>
 
@@ -531,8 +452,8 @@
                 <span id="badgeCheck-3" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Màng nhĩ</span>
-                <span class="text-emerald-300 text-[10px]">Ngăn ống tai và tai giữa</span>
+                <span class="badge-title text-white font-bold text-xs">Màng nhĩ</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Ngăn ống tai và tai giữa</span>
               </div>
             </div>
 
@@ -543,8 +464,8 @@
                 <span id="badgeCheck-4" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Chuỗi xương con</span>
-                <span class="text-emerald-300 text-[10px]">búa • đe • bàn đạp</span>
+                <span class="badge-title text-white font-bold text-xs">Chuỗi xương con</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">búa • đe • bàn đạp</span>
               </div>
             </div>
 
@@ -556,8 +477,8 @@
                 <span id="badgeCheck-5" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Dây thần kinh thính giác</span>
-                <span class="text-emerald-300 text-[10px]">Dẫn tín hiệu lên não</span>
+                <span class="badge-title text-white font-bold text-xs">Dây thần kinh thính giác</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Dẫn tín hiệu lên não</span>
               </div>
             </div>
 
@@ -568,13 +489,22 @@
                 <span id="badgeCheck-6" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
               </div>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-white font-bold text-xs">Ốc tai</span>
-                <span class="text-emerald-300 text-[10px]">Tai trong</span>
+                <span class="badge-title text-white font-bold text-xs">Ốc tai</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Tai trong</span>
               </div>
             </div>
 
             <!-- 7. Vòi tai -->
             <div id="earBadge-7" class="ear-callout-badge absolute pointer-events-auto" style="right: 2.5%; top: 68%;" onclick="earSim.selectPart(7)">
+              <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white bg-cyan-500">
+                <span class="part-num-text">7</span>
+                <span id="badgeCheck-7" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
+              </div>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="badge-title text-white font-bold text-xs">Vòi tai</span>
+                <span class="badge-desc text-emerald-300 text-[10px]">Cân bằng áp suất</span>
+              </div>
+            </div>
               <div class="relative w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-slate-950 bg-cyan-400">
                 <span class="part-num-text">7</span>
                 <span id="badgeCheck-7" class="part-check-badge hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center border border-white font-bold">✓</span>
@@ -830,6 +760,13 @@
   </main>
 
   <!-- Script Modules -->
+  <script src="three.min.js"></script>
+  <script src="GLTFLoader.js"></script>
+  <script src="OrbitControls.js"></script>
+  <script src="ear_model_data.js"></script>
+  <script src="catcanh_model_data.js"></script>
+  <script src="hacanh_model_data.js"></script>
+  <script src="ear_image_data.js"></script>
   <script src="audio.js"></script>
   <script src="report.js"></script>
   <script src="simulation.js"></script>

@@ -64,7 +64,7 @@ body {
   min-height: 500px;
   user-select: none;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 50%, #0d2830 0%, #081b21 60%, #040e12 100%);
+  background: radial-gradient(circle at 50% 50%, #eff2f5 0%, #e2e6eb 60%, #d5dae0 100%);
   border-radius: 1rem;
 }
 
@@ -152,11 +152,11 @@ body {
 .ear-callout-badge {
   position: absolute;
   width: max-content;
-  background: rgba(8, 28, 34, 0.92);
+  background: rgba(13, 37, 45, 0.94);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
   border-radius: 14px;
   padding: 6px 14px;
   display: flex;
@@ -164,9 +164,26 @@ body {
   gap: 10px;
   cursor: pointer;
   pointer-events: auto;
+  color: #ffffff !important;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
   user-select: none;
   z-index: 25;
+}
+
+.ear-callout-badge span {
+  color: #ffffff;
+}
+
+.ear-callout-badge .badge-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+.ear-callout-badge .badge-desc {
+  color: #6ee7b7 !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
 }
 
 .ear-callout-badge:hover {
@@ -176,8 +193,9 @@ body {
 }
 
 .ear-callout-badge.active {
+  background: rgba(15, 52, 64, 0.98) !important;
   border-color: #fbbf24 !important;
-  box-shadow: 0 0 22px rgba(251, 191, 36, 0.65) !important;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.7) !important;
 }
 
 .ear-callout-badge.centered {
@@ -219,14 +237,15 @@ body {
 }
 
 .ear-3d-pin:hover {
-  transform: translate(-50%, -50%) scale(1.22);
+  transform: translate(-50%, -50%) scale(1.18);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 4px 14px rgba(0, 0, 0, 0.65);
+  z-index: 24;
 }
 
 .ear-3d-pin.active {
-  transform: translate(-50%, -50%) scale(1.25);
-  box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #fbbf24, 0 6px 18px rgba(0, 0, 0, 0.7);
-  z-index: 26;
+  transform: translate(-50%, -50%) scale(1.18);
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px #fbbf24, 0 5px 16px rgba(0, 0, 0, 0.7);
+  z-index: 25;
 }
 
 /* Floating Information Card for Selected Ear Part */

@@ -160,6 +160,37 @@ class SoundEngine {
     osc.stop(ctx.currentTime + 0.04);
   }
 
+  // Generic tone synthesizer
+  playTone(freq = 440, duration = 0.15, type = 'sine') {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.audioCtx) return;
+    try {
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.05);
+    } catch (e) {}
+  }
+
+  // Celebratory fanfare
+  playFanfare() {
+    this.playSuccess();
+  }
+
+  // Error buzz sound
+  playBuzz() {
+    this.playTone(150, 0.25, 'sawtooth');
+  }
+
   // Realistic Ear Equalization "Pop / Click" sound when swallowing/yawning
   playEarPop() {
     if (!this.enabled) return;

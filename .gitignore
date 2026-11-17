@@ -1,0 +1,19 @@
+# Log & Temporary files
+debug.log
+scratch/
+*.py
+
+# Test & Prototype HTML pages
+scratch_*.html
+test_*.html
+run_convert_page.html
+
+# Large & unused models (>100MB breaks GitHub push)
+human_ear_anatomy_official.glb
+human_ear_anatomy.glb
+innerscene_ear.glb
+
+# Downloader tools & temporary images
+sketchfab_cli/
+sketchfab_downloader/
+ear_cutout.png
