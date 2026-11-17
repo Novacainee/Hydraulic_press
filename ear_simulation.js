@@ -121,16 +121,19 @@ class EarSimulation {
     this.selectedPartId = null;
     this.unlockedFlightMode = false;
 
-    // Flight Scenario: 'landing' (Hạ cánh) or 'takeoff' (Cất cánh)
+    // Flight Scenario & Pressures (70 - 105 kPa, default 80 kPa)
     this.flightType = 'landing';
-
-    // Flight Pressure Stages: 1 = Cân bằng, 2 = Áp suất đổi, 3 = Tiếng động, 4 = Nuốt/ngáp
     this.stage = 1;
     this.pOuter = 80;
     this.pInner = 80;
     this.eardrumDeform = 0; // 0 = flat, +1 = deformed
     this.targetDeform = 0;
-    this.isEqualized = false; // true when student pressed Nuốt/Ngáp in stage 4
+    this.isEqualized = true;
+    this.isEqualizing = false;
+    this.equalizeStartInner = 80;
+    this.equalizeTargetInner = 80;
+    this.equalizeStartTime = 0;
+    this.equalizeDuration = 1200;
 
     // Eustachian Tube Airflow State
     this.isEustachianOpen = false;
@@ -477,18 +480,16 @@ class EarSimulation {
 
     let target = 'normal';
     if (this.subMode === 'pressure') {
-      // In flight pressure mode:
-      // Stage 1 = Cân bằng (mô hình chuẩn phẳng)
-      // Stage 2 = Áp suất đổi (mô hình màng nhĩ biến dạng thực tế)
-      // Stage 3 = Tiếng động lạ / Ù tai (mô hình màng nhĩ biến dạng thực tế)
-      // Stage 4 = Nuốt / ngáp (mô hình biến dạng cho tới khi học sinh bấm nút Nuốt/Ngáp)
-      const isDeformed = (this.stage === 2 || this.stage === 3 || (this.stage === 4 && !this.isEqualized));
-      if (isDeformed) {
-        if (this.flightType === 'takeoff' && this.meshTakeoff) {
-          target = 'takeoff';
-        } else if (this.flightType === 'landing' && this.meshLanding) {
-          target = 'landing';
-        }
+      const deltaP = this.pOuter - this.pInner;
+      if (deltaP > 0) {
+        // P_ngoài > P_trong: Màng nhĩ cong vào phía tai giữa (Mô hình hacanh.glb)
+        target = this.meshLanding ? 'landing' : 'normal';
+      } else if (deltaP < 0) {
+        // P_trong > P_ngoài: Màng nhĩ cong ra phía ống tai ngoài (Mô hình catcanh.glb)
+        target = this.meshTakeoff ? 'takeoff' : 'normal';
+      } else {
+        // P_ngoài = P_trong: Màng nhĩ ở vị trí cân bằng phẳng
+        target = 'normal';
       }
     }
 
@@ -685,12 +686,6 @@ class EarSimulation {
   // SUB-MODE SWITCHING ('anatomy' vs 'pressure')
   // -------------------------------------------------------------
   setSubMode(mode) {
-    if (mode === 'pressure' && !this.unlockedFlightMode && this.exploredParts.size < 7) {
-      if (window.sound) window.sound.playBuzz();
-      alert(`Bạn cần bấm tìm hiểu đủ 7 bộ phận của tai trước khi mở khóa mục "Vì sao có tiếng động trong tai"! (Hiện đã khám phá: ${this.exploredParts.size}/7)`);
-      return;
-    }
-
     this.subMode = mode;
     const tabAnat = document.getElementById('subTabAnatomy');
     const tabPres = document.getElementById('subTabPressure');
@@ -746,8 +741,18 @@ class EarSimulation {
       });
       if (this.pressureArrowGroup3D) this.pressureArrowGroup3D.visible = true;
 
-      this.setFlightType(this.flightType || 'landing');
-      this.setStage(1);
+      this.pOuter = 80;
+      this.pInner = 80;
+      const sliderOuter = document.getElementById('sliderPOuter');
+      const sliderInner = document.getElementById('sliderPInner');
+      if (sliderOuter) sliderOuter.value = 80;
+      if (sliderInner) sliderInner.value = 80;
+      const fb = document.getElementById('swallowFeedbackMsg');
+      if (fb) fb.classList.add('hidden');
+      this.isEustachianOpen = false;
+      this.isEqualizing = false;
+      this.updatePressureTelemetry();
+      this.updateFlightModel();
     }
     this.updateFlightModel();
 
@@ -903,248 +908,211 @@ class EarSimulation {
   }
 
   // -------------------------------------------------------------
-  // FLIGHT SCENARIO TOGGLE (Takeoff vs Landing)
+  // PRESSURE LAB & FLIGHT PRESETS (70–105 kPa)
   // -------------------------------------------------------------
-  setFlightType(type) {
-    this.flightType = (type === 'takeoff') ? 'takeoff' : 'landing';
-    const btnTakeoff = document.getElementById('btnFlightTakeoff');
-    const btnLanding = document.getElementById('btnFlightLanding');
-    const stageText1 = document.getElementById('stageText-1');
-    const stageText2 = document.getElementById('stageText-2');
+  setPreset(pOut, pIn, scenarioName) {
+    this.isEqualizing = false;
+    this.pOuter = pOut;
+    this.pInner = pIn;
 
-    if (this.flightType === 'takeoff') {
-      if (btnTakeoff) {
-        btnTakeoff.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-sky-600 text-white shadow-sm";
-      }
-      if (btnLanding) {
-        btnLanding.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
-      }
-      if (stageText1) stageText1.textContent = "1️⃣ Dưới đất (Cân bằng)";
-      if (stageText2) stageText2.textContent = "2️⃣ Cất cánh (Áp suất đổi)";
-    } else {
-      if (btnLanding) {
-        btnLanding.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-sky-600 text-white shadow-sm";
-      }
-      if (btnTakeoff) {
-        btnTakeoff.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
-      }
-      if (stageText1) stageText1.textContent = "1️⃣ Trên cao (Cân bằng)";
-      if (stageText2) stageText2.textContent = "2️⃣ Hạ cánh (Áp suất đổi)";
-    }
+    const sliderOuter = document.getElementById('sliderPOuter');
+    const sliderInner = document.getElementById('sliderPInner');
+    if (sliderOuter) sliderOuter.value = pOut;
+    if (sliderInner) sliderInner.value = pIn;
 
-    this.setStage(1);
+    const fb = document.getElementById('swallowFeedbackMsg');
+    if (fb) fb.classList.add('hidden');
+    this.isEustachianOpen = false;
+
+    this.updatePressureTelemetry();
+    this.updateFlightModel();
+
     if (window.sound) window.sound.playClick();
   }
 
-  prevStage() {
-    if (this.stage > 1) {
-      this.setStage(this.stage - 1);
-      if (window.sound) window.sound.playClick();
-    }
+  onOuterPressureSlider(val) {
+    this.isEqualizing = false;
+    this.pOuter = parseInt(val, 10);
+
+    const fb = document.getElementById('swallowFeedbackMsg');
+    if (fb) fb.classList.add('hidden');
+    this.isEustachianOpen = false;
+
+    this.updatePressureTelemetry();
+    this.updateFlightModel();
   }
 
-  nextStage() {
-    if (this.stage < 4) {
-      this.setStage(this.stage + 1);
-      if (window.sound) window.sound.playClick();
-    }
+  onInnerPressureSlider(val) {
+    this.isEqualizing = false;
+    this.pInner = parseInt(val, 10);
+
+    const fb = document.getElementById('swallowFeedbackMsg');
+    if (fb) fb.classList.add('hidden');
+    this.isEustachianOpen = false;
+
+    this.updatePressureTelemetry();
+    this.updateFlightModel();
   }
 
-  setStage(stageNum) {
-    this.stage = stageNum;
-    this.isEqualized = false;
+  // Cập nhật ô kết quả tự động tính toán (Δp = P ngoài − P trong) và các trạng thái 3 trường hợp
+  updatePressureTelemetry() {
+    const pOut = this.pOuter;
+    const pIn = this.pInner;
+    const deltaP = pOut - pIn;
 
-    // Update 4 quick pills
-    for (let i = 1; i <= 4; i++) {
-      const btn = document.getElementById(`stageBtn-${i}`);
-      if (btn) {
-        if (i === stageNum) {
-          btn.className = "stage-nav-pill active flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-sm transition";
-        } else {
-          btn.className = "stage-nav-pill flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition";
-        }
+    // Hiển thị giá trị trên thanh trượt
+    const valPOuterEl = document.getElementById('valPOuter');
+    const valPInnerEl = document.getElementById('valPInner');
+    if (valPOuterEl) valPOuterEl.textContent = `${pOut} kPa`;
+    if (valPInnerEl) valPInnerEl.textContent = `${pIn} kPa`;
+
+    // Hiển thị thông số trong ô kết quả
+    const resCard = document.getElementById('pressureResultCard');
+    const resComp = document.getElementById('resComparison');
+    const resPOut = document.getElementById('resPOuter');
+    const resPIn = document.getElementById('resPInner');
+    const resDeltaP = document.getElementById('resDeltaP');
+    const resStatusBox = document.getElementById('resStatusBox');
+    const resStatusIcon = document.getElementById('resStatusIcon');
+    const resStatusTitle = document.getElementById('resStatusTitle');
+    const resStatusDesc = document.getElementById('resStatusDesc');
+
+    if (resPOut) resPOut.textContent = `${pOut} kPa`;
+    if (resPIn) resPIn.textContent = `${pIn} kPa`;
+
+    if (deltaP === 0) {
+      // TRƯỜNG HỢP 1: Hai bên cân bằng (P ngoài = P trong → Δp = 0 kPa)
+      if (resComp) {
+        resComp.textContent = "P ngoài = P trong (Cân bằng)";
+        resComp.className = "font-extrabold text-emerald-700";
       }
-    }
-
-    const titleEl = document.getElementById('flightStageTitle');
-    const descEl = document.getElementById('flightStageDesc');
-    const outerPEl = document.getElementById('flightOuterP');
-    const innerPEl = document.getElementById('flightInnerP');
-    const deltaPEl = document.getElementById('flightDeltaP');
-    const badgeEl = document.getElementById('eardrumStateBadge');
-    const stepInd = document.getElementById('stageStepIndicator');
-    const btnPrev = document.getElementById('btnPrevStage');
-    const btnNext = document.getElementById('btnNextStage');
-    const swallowBtn = document.getElementById('swallowActionBtn');
-
-    if (stepInd) stepInd.textContent = `Giai đoạn ${stageNum} / 4`;
-    if (btnPrev) btnPrev.disabled = (stageNum === 1);
-    if (btnNext) btnNext.disabled = (stageNum === 4);
-
-    const isLanding = (this.flightType === 'landing');
-
-    if (stageNum === 1) {
-      // 1. CÂN BẰNG
-      if (isLanding) {
-        this.pOuter = 80;
-        this.pInner = 80;
-        if (titleEl) titleEl.textContent = "1. Trên cao: Máy bay bay ổn định trên cao";
-        if (descEl) descEl.textContent = "Trong khoang máy bay trên cao (độ cao ổn định), áp suất khoảng 80 kPa. Áp suất hai bên màng nhĩ bằng nhau (80 kPa = 80 kPa) nên màng nhĩ ở vị trí phẳng cân bằng, vòi tai đang đóng. Ta nghe rõ và không có tiếng động lạ.";
-      } else {
-        this.pOuter = 101;
-        this.pInner = 101;
-        if (titleEl) titleEl.textContent = "1. Dưới đất: Máy bay chuẩn bị cất cánh ở mặt đất";
-        if (descEl) descEl.textContent = "Ở mặt đất, áp suất khí quyển là 101 kPa. Áp suất trong ống tai và tai giữa đều bằng 101 kPa. Màng nhĩ ở trạng thái phẳng cân bằng, vòi tai đang đóng kín tự nhiên.";
+      if (resDeltaP) {
+        resDeltaP.textContent = "0 kPa";
+        resDeltaP.className = "font-mono font-extrabold text-emerald-600 text-sm";
       }
-
+      if (resCard) {
+        resCard.className = "p-3 rounded-xl border transition space-y-2 text-xs bg-emerald-50/70 border-emerald-300";
+      }
+      if (resStatusBox) {
+        resStatusBox.className = "p-2.5 rounded-lg bg-white border border-emerald-300 shadow-sm flex items-start gap-2 text-xs";
+      }
+      if (resStatusIcon) resStatusIcon.textContent = "⚖️";
+      if (resStatusTitle) {
+        resStatusTitle.textContent = "ÁP SUẤT CÂN BẰNG";
+        resStatusTitle.className = "font-extrabold text-emerald-800";
+      }
+      if (resStatusDesc) {
+        resStatusDesc.textContent = "Màng nhĩ ở trạng thái cân bằng, không bị đẩy lệch đáng kể.";
+      }
       this.targetDeform = 0;
-      this.isEustachianOpen = false;
-      if (swallowBtn) {
-        swallowBtn.disabled = true;
-        swallowBtn.classList.remove('animate-pulse');
+    } else if (deltaP > 0) {
+      // TRƯỜNG HỢP 2: Áp suất bên ngoài lớn hơn áp suất bên trong (P ngoài > P trong → Δp > 0)
+      if (resComp) {
+        resComp.textContent = "P ngoài > P trong (Ống tai ngoài lớn hơn)";
+        resComp.className = "font-extrabold text-sky-700";
       }
-
-      if (badgeEl) {
-        badgeEl.textContent = "Màng nhĩ: Cân bằng phẳng (Bình thường)";
-        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      if (resDeltaP) {
+        resDeltaP.textContent = `+${deltaP} kPa`;
+        resDeltaP.className = "font-mono font-extrabold text-sky-700 text-sm";
       }
+      if (resCard) {
+        resCard.className = "p-3 rounded-xl border transition space-y-2 text-xs bg-sky-50/70 border-sky-300";
+      }
+      if (resStatusBox) {
+        resStatusBox.className = "p-2.5 rounded-lg bg-white border border-sky-300 shadow-sm flex items-start gap-2 text-xs";
+      }
+      if (resStatusIcon) resStatusIcon.textContent = "➡️";
+      if (resStatusTitle) {
+        resStatusTitle.textContent = "ÁP SUẤT NGOÀI LỚN HƠN (ĐẨY VÀO TAI GIỮA ➡️)";
+        resStatusTitle.className = "font-extrabold text-sky-800";
+      }
+      if (resStatusDesc) {
+        resStatusDesc.textContent = "Áp suất bên ngoài lớn hơn, đẩy màng nhĩ về phía tai giữa.";
+      }
+      this.targetDeform = Math.min(1.0, Math.abs(deltaP) / 25);
+    } else {
+      // TRƯỜNG HỢP 3: Áp suất bên trong lớn hơn áp suất bên ngoài (P ngoài < P trong → Δp < 0)
+      if (resComp) {
+        resComp.textContent = "P trong > P ngoài (Tai giữa bên trong lớn hơn)";
+        resComp.className = "font-extrabold text-rose-700";
+      }
+      if (resDeltaP) {
+        resDeltaP.textContent = `${deltaP} kPa`;
+        resDeltaP.className = "font-mono font-extrabold text-rose-700 text-sm";
+      }
+      if (resCard) {
+        resCard.className = "p-3 rounded-xl border transition space-y-2 text-xs bg-rose-50/70 border-rose-300";
+      }
+      if (resStatusBox) {
+        resStatusBox.className = "p-2.5 rounded-lg bg-white border border-rose-300 shadow-sm flex items-start gap-2 text-xs";
+      }
+      if (resStatusIcon) resStatusIcon.textContent = "⬅️";
+      if (resStatusTitle) {
+        resStatusTitle.textContent = "ÁP SUẤT TRONG LỚN HƠN (ĐẨY RA ỐNG TAI NGOÀI ⬅️)";
+        resStatusTitle.className = "font-extrabold text-rose-800";
+      }
+      if (resStatusDesc) {
+        resStatusDesc.textContent = "Áp suất bên trong lớn hơn, đẩy màng nhĩ về phía ống tai ngoài.";
+      }
+      this.targetDeform = Math.min(1.0, Math.abs(deltaP) / 25);
     }
-    else if (stageNum === 2) {
-      // 2. ÁP SUẤT ĐỔI
-      if (isLanding) {
-        this.pOuter = 101;
-        this.pInner = 80;
-        if (titleEl) titleEl.textContent = "2. Áp suất đổi: Máy bay hạ cánh, áp suất ngoài tăng";
-        if (descEl) descEl.textContent = "Máy bay hạ độ cao rất nhanh từ trên trời xuống đất: áp suất không khí bên ngoài tăng vọt từ 80 lên 101 kPa. Không khí bên ngoài tràn vào ống tai tức thì, trong khi vòi tai vẫn đóng nên tai giữa chưa kịp thích ứng (vẫn còn 80 kPa).";
-      } else {
-        this.pOuter = 80;
-        this.pInner = 101;
-        if (titleEl) titleEl.textContent = "2. Cất cánh: Máy bay bay lên cao, áp suất ngoài giảm";
-        if (descEl) descEl.textContent = "Máy bay lấy độ cao rất nhanh: áp suất không khí bên ngoài giảm nhanh từ 101 xuống còn 80 kPa. Áp suất trong ống tai giảm theo, trong khi áp suất trong tai giữa vẫn giữ mức 101 kPa ban đầu.";
-      }
-
-      this.targetDeform = 0.5;
-      this.isEustachianOpen = false;
-      if (swallowBtn) {
-        swallowBtn.disabled = true;
-        swallowBtn.classList.remove('animate-pulse');
-      }
-
-      if (badgeEl) {
-        badgeEl.textContent = isLanding ? "Màng nhĩ: Bắt đầu bị ép vào trong" : "Màng nhĩ: Bắt đầu bị đẩy phồng ra ngoài";
-        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300";
-      }
-    }
-    else if (stageNum === 3) {
-      // 3. TIẾNG ĐỘNG / Ù TAI
-      if (isLanding) {
-        this.pOuter = 101;
-        this.pInner = 80;
-        if (titleEl) titleEl.textContent = "3. Mất cân bằng áp suất: Tiếng động trong tai / Ù tai!";
-        if (descEl) descEl.textContent = "Áp suất ngoài (101 kPa) LỚN HƠN áp suất trong (80 kPa), tạo lực ép mạnh đẩy màng nhĩ đột ngột lõm sâu về phía tai giữa! Sự biến dạng đột ngột này tạo nên cảm giác căng tức, tiếng 'bộp' hoặc triệu chứng ù tai.";
-      } else {
-        this.pOuter = 80;
-        this.pInner = 101;
-        if (titleEl) titleEl.textContent = "3. Mất cân bằng áp suất: Màng nhĩ phồng lồi ra ngoài → Tiếng 'bộp' / Ù tai!";
-        if (descEl) descEl.textContent = "Áp suất ngoài (80 kPa) NHỎ HƠN áp suất trong (101 kPa)! Không khí trong tai giữa nở ra đẩy màng nhĩ phồng lồi ra phía ngoài ống tai, gây căng tức màng nhĩ và sinh ra tiếng động lạ/ù tai!";
-      }
-
-      this.targetDeform = 1.0;
-      this.isEustachianOpen = false;
-      if (swallowBtn) {
-        swallowBtn.disabled = true;
-        swallowBtn.classList.remove('animate-pulse');
-      }
-
-      if (badgeEl) {
-        badgeEl.textContent = isLanding ? "⚠️ Màng nhĩ: LÕM SÂU VÀO TRONG (Ù TAI)" : "⚠️ Màng nhĩ: PHỒNG LỒI RA NGOÀI (Ù TAI)";
-        badgeEl.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse";
-      }
-
-      if (window.sound) {
-        window.sound.playTone(180, 0.35, 'sawtooth');
-        setTimeout(() => window.sound.playTone(2800, 0.45, 'sine'), 100);
-      }
-    }
-    else if (stageNum === 4) {
-      // 4. NUỐT / NGÁP (Học sinh chủ động bấm)
-      if (titleEl) titleEl.textContent = "4. Nuốt / ngáp: Mở vòi tai cân bằng lại áp suất!";
-      if (descEl) descEl.textContent = "Vòi tai đang đóng nên áp suất hai bên chưa thể cân bằng. Hãy bấm vào nút [🗣️ NUỐT / NGÁP] màu xanh bên dưới để mở vòi tai, cho luồng khí lưu thông cân bằng lại màng nhĩ!";
-
-      this.targetDeform = 1.0;
-      this.isEustachianOpen = false;
-      if (swallowBtn) {
-        swallowBtn.disabled = false;
-        swallowBtn.classList.add('animate-pulse');
-      }
-
-      if (badgeEl) {
-        badgeEl.textContent = "👉 Hãy bấm nút [🗣️ NUỐT / NGÁP] bên dưới!";
-        badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-900 border border-amber-400";
-      }
-    }
-
-    const delta = Math.abs(this.pOuter - this.pInner);
-    if (outerPEl) outerPEl.textContent = `${this.pOuter} kPa`;
-    if (innerPEl) innerPEl.textContent = `${this.pInner} kPa`;
-    if (deltaPEl) deltaPEl.textContent = `${delta} kPa`;
-
-    // Update 3D realistic eardrum model based on current stage & flight scenario
-    this.updateFlightModel();
   }
 
-  // Action khi học sinh bấm nút "Nuốt / Ngáp" ở giai đoạn 4
+  // -------------------------------------------------------------
+  // NÚT “NGÁP / NUỐT NƯỚC BỌT” – CÂN BẰNG ÁP SUẤT
+  // -------------------------------------------------------------
   doSwallowOrYawn() {
-    this.isEqualized = true;
+    // 1. Hiển thị thông báo phản hồi
+    const fb = document.getElementById('swallowFeedbackMsg');
+    if (fb) fb.classList.remove('hidden');
+
+    // 2. Vòi nhĩ mở ra bằng hoạt ảnh & hạt lưu thông
     this.isEustachianOpen = true;
-    this.targetDeform = 0; // Màng nhĩ bật phẳng trở lại
 
-    // Đưa áp suất hai bên về cân bằng
-    this.pInner = this.pOuter;
-
-    const titleEl = document.getElementById('flightStageTitle');
-    const descEl = document.getElementById('flightStageDesc');
-    const innerPEl = document.getElementById('flightInnerP');
-    const deltaPEl = document.getElementById('flightDeltaP');
-    const badgeEl = document.getElementById('eardrumStateBadge');
-    const swallowBtn = document.getElementById('swallowActionBtn');
-
-    if (innerPEl) innerPEl.textContent = `${this.pInner} kPa`;
-    if (deltaPEl) deltaPEl.textContent = `0 kPa`;
-
-    const isLanding = (this.flightType === 'landing');
-
-    if (titleEl) titleEl.textContent = "4. Đã cân bằng: Màng nhĩ bật phẳng trở lại!";
-    if (descEl) {
-      if (isLanding) {
-        descEl.textContent = "Vòi tai đã mở! Không khí từ vòm mũi - họng tràn qua vòi tai vào tai giữa, đưa áp suất trong tai giữa lên bằng 101 kPa. Màng nhĩ bật phẳng trở lại vị trí bình thường, tiếng ù tai biến mất hoàn toàn!";
-      } else {
-        descEl.textContent = "Vòi tai đã mở! Không khí dư thừa trong tai giữa theo vòi tai thoát xuống họng, đưa áp suất tai giữa giảm về 80 kPa bằng áp suất bên ngoài. Màng nhĩ bật phẳng trở lại, tai nghe rõ ràng!";
-      }
-    }
-
-    if (badgeEl) {
-      badgeEl.textContent = "✅ Màng nhĩ: CÂN BẰNG PHẲNG HOÀN TOÀN (Nghe rõ)";
-      badgeEl.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300";
-    }
-
-    if (swallowBtn) {
-      swallowBtn.classList.remove('animate-pulse');
-    }
-
-    // Switch back to normal balanced 3D model
-    this.updateFlightModel();
-
+    // 3. Hiệu ứng âm thanh nuốt và tiếng bóp (pop)
     if (window.sound) {
       window.sound.playSwallow();
       setTimeout(() => {
         if (window.sound) window.sound.playEarPop();
-      }, 120);
-      setTimeout(() => {
-        if (window.sound) window.sound.playSuccess();
-      }, 280);
+      }, 160);
+    }
+
+    // 4. Nếu đã bằng nhau, chỉ cần cập nhật trạng thái
+    if (this.pInner === this.pOuter) {
+      this.updatePressureTelemetry();
+      this.updateFlightModel();
+      return;
+    }
+
+    // 5. Kích hoạt hoạt ảnh mượt mà: P_trong thay đổi từ từ tiến về bằng P_ngoài (P_ngoài giữ nguyên)
+    this.isEqualizing = true;
+    this.equalizeStartInner = this.pInner;
+    this.equalizeTargetInner = this.pOuter; // Áp suất ngoài không đổi
+    this.equalizeStartTime = performance.now();
+    this.equalizeDuration = 1200; // 1.2 giây
+  }
+
+  // Compatibility stubs for legacy calls
+  setFlightType(type) {
+    if (type === 'takeoff') {
+      this.setPreset(80, 101, 'takeoff');
+    } else {
+      this.setPreset(101, 80, 'landing');
     }
   }
+
+  setStage(stageNum) {
+    if (stageNum === 1) {
+      this.setPreset(80, 80, 'cruise');
+    } else if (stageNum === 2 || stageNum === 3) {
+      this.setPreset(101, 80, 'landing');
+    } else if (stageNum === 4) {
+      this.doSwallowOrYawn();
+    }
+  }
+
+  prevStage() {}
+  nextStage() {}
 
   // -------------------------------------------------------------
   // SOUND WAVE PROPAGATION ANIMATION (Phát sóng âm)
@@ -1436,48 +1404,22 @@ class EarSimulation {
     }
     this.pressureArrowGroup3D.visible = true;
 
-    const isLanding = (this.flightType === 'landing');
-    const isBalanced = (this.stage === 1 || (this.stage === 4 && this.isEqualized));
+    // Helper tính kích thước mũi tên động theo độ lớn áp suất (70 - 105 kPa)
+    const getArrowDims = (p) => {
+      const t = Math.max(0, Math.min(1, (p - 70) / 35));
+      return {
+        len: 0.14 + t * 0.18,  // Chiều dài từ 0.14m đến 0.32m
+        r: 0.010 + t * 0.014,  // Bán kính thân từ 0.010m đến 0.024m
+        hr: 0.022 + t * 0.026, // Bán kính đầu nón từ 0.022m đến 0.048m
+        hl: 0.045 + t * 0.040  // Chiều dài đầu nón từ 0.045m đến 0.085m
+      };
+    };
 
-    let lenOuter, rOuter, hrOuter, hlOuter;
-    let lenInner, rInner, hrInner, hlInner;
+    const dimsOuter = getArrowDims(this.pOuter);
+    const dimsInner = getArrowDims(this.pInner);
 
-    if (isBalanced) {
-      lenOuter = 0.22;
-      rOuter = 0.015;
-      hrOuter = 0.034;
-      hlOuter = 0.065;
-
-      lenInner = 0.22;
-      rInner = 0.015;
-      hrInner = 0.034;
-      hlInner = 0.065;
-    } else if (isLanding) {
-      // Landing: outer is HIGH (101 kPa), inner is LOW (80 kPa)
-      lenOuter = 0.32;
-      rOuter = 0.024;
-      hrOuter = 0.048;
-      hlOuter = 0.085;
-
-      lenInner = 0.14;
-      rInner = 0.010;
-      hrInner = 0.022;
-      hlInner = 0.045;
-    } else {
-      // Takeoff: outer is LOW (80 kPa), inner is HIGH (101 kPa)
-      lenOuter = 0.14;
-      rOuter = 0.010;
-      hrOuter = 0.022;
-      hlOuter = 0.045;
-
-      lenInner = 0.32;
-      rInner = 0.024;
-      hrInner = 0.048;
-      hlInner = 0.085;
-    }
-
-    this.lenOuter3D = lenOuter;
-    this.lenInner3D = lenInner;
+    this.lenOuter3D = dimsOuter.len;
+    this.lenInner3D = dimsInner.len;
 
     // Eardrum target center: recessed back in Z (0.18 instead of 0.34) and lowered Y (0.04 instead of 0.08)
     const edCenterX = 0.19;
@@ -1508,11 +1450,11 @@ class EarSimulation {
 
     // Outer arrow points +X into eardrum (rotY = 0)
     const tipOuter = new THREE.Vector3(edCenterX - gap, edCenterY, edCenterZ);
-    setArrowGeom(this.arrowOuter3D, tipOuter, 0, lenOuter, rOuter, hrOuter, hlOuter);
+    setArrowGeom(this.arrowOuter3D, tipOuter, 0, dimsOuter.len, dimsOuter.r, dimsOuter.hr, dimsOuter.hl);
 
     // Inner arrow points -X into eardrum (rotY = Math.PI)
     const tipInner = new THREE.Vector3(edCenterX + gap, edCenterY, edCenterZ);
-    setArrowGeom(this.arrowInner3D, tipInner, Math.PI, lenInner, rInner, hrInner, hlInner);
+    setArrowGeom(this.arrowInner3D, tipInner, Math.PI, dimsInner.len, dimsInner.r, dimsInner.hr, dimsInner.hl);
   }
 
   // Pressure mode overlays (Airflow along curved Eustachian tube & Projected 3D HUD Badges)
@@ -1521,10 +1463,9 @@ class EarSimulation {
     const eustachian = EAR_PARTS.find(p => p.id === 7);
     if (!eardrum || !eustachian || !eardrum.screenX || !eustachian.screenX) return;
 
-    // 1. Airflow stream along Eustachian tube during Stage 4
+    // 1. Luồng không khí lưu thông qua vòi nhĩ khi mở
     if (this.isEustachianOpen) {
-      const isLanding = (this.flightType === 'landing');
-      // Spline from throat (pin 7) to middle ear (pin 3)
+      const isFlowIn = (this.pOuter >= this.pInner);
       const startX = eustachian.screenX;
       const startY = eustachian.screenY;
       const endX = eardrum.screenX + 20;
@@ -1534,17 +1475,16 @@ class EarSimulation {
 
       ctx.save();
       this.eustachianParticles.forEach(p => {
-        p.progress += 0.015 * p.speed;
+        p.progress += 0.018 * p.speed;
         if (p.progress > 1) p.progress = 0;
 
-        const t = isLanding ? p.progress : (1 - p.progress);
+        const t = isFlowIn ? p.progress : (1 - p.progress);
         const oneMinusT = 1 - t;
-        // Quadratic bezier formula
         const bx = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * cpX + t * t * endX;
         const by = oneMinusT * oneMinusT * startY + 2 * oneMinusT * t * cpY + t * t * endY;
 
-        ctx.fillStyle = isLanding ? '#34d399' : '#38bdf8';
-        ctx.shadowColor = isLanding ? '#10b981' : '#0284c7';
+        ctx.fillStyle = isFlowIn ? '#34d399' : '#38bdf8';
+        ctx.shadowColor = isFlowIn ? '#10b981' : '#0284c7';
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(bx + p.offset, by, p.size, 0, Math.PI * 2);
@@ -1556,8 +1496,9 @@ class EarSimulation {
     // 2. Projected 3D HUD Badges tracking the 3D arrows rigidly
     if (!this.arrowOuter3D || !this.arrowInner3D || !this.earRoot || !this.camera) return;
 
-    const isLanding = (this.flightType === 'landing');
-    const isBalanced = (this.stage === 1 || (this.stage === 4 && this.isEqualized));
+    const isOuterHigh = (this.pOuter > this.pInner);
+    const isInnerHigh = (this.pInner > this.pOuter);
+    const isBalanced = (this.pOuter === this.pInner);
 
     // Outer arrow midpoint in world space
     const outerMidWorld = new THREE.Vector3(-this.lenOuter3D * 0.5, 0, 0);
@@ -1632,7 +1573,6 @@ class EarSimulation {
 
     // Draw Outer Badge if in front of camera
     if (pOuterCam.z <= 1.0) {
-      const isOuterHigh = (!isBalanced && isLanding);
       const outerTitle = "Ống tai (Ngoài)";
       const outerP = `${this.pOuter} kPa${isOuterHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
       drawBadge(sxOuter, bY_outer, outerTitle, outerP, isOuterHigh);
@@ -1640,7 +1580,6 @@ class EarSimulation {
 
     // Draw Inner Badge if in front of camera
     if (pInnerCam.z <= 1.0) {
-      const isInnerHigh = (!isBalanced && !isLanding);
       const innerTitle = "Tai giữa (Trong)";
       const innerP = `${this.pInner} kPa${isInnerHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
       drawBadge(sxInner, bY_inner, innerTitle, innerP, isInnerHigh);
@@ -1655,21 +1594,22 @@ class EarSimulation {
       let statusBorder = '';
       let statusColor = '';
 
-      if (isBalanced) {
-        statusText = "⚖️ Áp suất hai bên CÂN BẰNG (Màng nhĩ phẳng)";
+      const deltaP = this.pOuter - this.pInner;
+      if (deltaP === 0) {
+        statusText = "⚖️ ÁP SUẤT CÂN BẰNG (Màng nhĩ phẳng)";
         statusBg = 'rgba(236, 253, 245, 0.96)';
         statusBorder = '#34d399';
         statusColor = '#065f46';
-      } else if (isLanding) {
-        statusText = "⚠️ P_ngoài > P_trong → Màng nhĩ bị ÉP LÕM VÀO TRONG";
+      } else if (deltaP > 0) {
+        statusText = `➡️ P_ngoài > P_trong (+${deltaP} kPa) → Đẩy màng nhĩ về phía tai giữa`;
+        statusBg = 'rgba(240, 249, 255, 0.96)';
+        statusBorder = '#38bdf8';
+        statusColor = '#0369a1';
+      } else {
+        statusText = `⬅️ P_trong > P_ngoài (${deltaP} kPa) → Đẩy màng nhĩ về phía ống tai ngoài`;
         statusBg = 'rgba(254, 242, 242, 0.96)';
         statusBorder = '#f87171';
         statusColor = '#991b1b';
-      } else {
-        statusText = "⚠️ P_trong > P_ngoài → Màng nhĩ bị ĐẨY PHỒNG RA NGOÀI";
-        statusBg = 'rgba(255, 251, 235, 0.96)';
-        statusBorder = '#fbbf24';
-        statusColor = '#92400e';
       }
 
       ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
@@ -1752,6 +1692,30 @@ class EarSimulation {
         this.swayTime += dt * 0.9;
         this.modelGroup.rotation.y = this.baseRotY + Math.sin(this.swayTime) * 0.22;
         this.modelGroup.rotation.x = this.baseRotX + Math.cos(this.swayTime * 0.7) * 0.06;
+      }
+
+      // 2b. Smooth Equalization when Swallowing / Yawning (P_trong tiến về P_ngoài)
+      if (this.isEqualizing) {
+        const elapsed = performance.now() - this.equalizeStartTime;
+        const progress = Math.min(1.0, elapsed / this.equalizeDuration);
+        const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const currentInner = Math.round(this.equalizeStartInner + (this.equalizeTargetInner - this.equalizeStartInner) * ease);
+        this.pInner = currentInner;
+
+        const sliderInner = document.getElementById('sliderPInner');
+        if (sliderInner) sliderInner.value = currentInner;
+
+        this.updatePressureTelemetry();
+        this.updateFlightModel();
+
+        if (progress >= 1.0) {
+          this.isEqualizing = false;
+          this.pInner = this.equalizeTargetInner;
+          if (sliderInner) sliderInner.value = this.pInner;
+          this.updatePressureTelemetry();
+          this.updateFlightModel();
+          if (window.sound) window.sound.playSuccess();
+        }
       }
 
       // 3. Realistic Eardrum Deformation (No annoying shake on model in stage 3)
