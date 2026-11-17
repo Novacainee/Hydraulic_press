@@ -191,7 +191,7 @@ class SoundEngine {
     this.playTone(150, 0.25, 'sawtooth');
   }
 
-  // Realistic Ear Equalization "Pop / Click" sound when swallowing/yawning
+  // Realistic Ear Equalization "Pop / Click" sound when swallowing/yawning ("tiếng bóp" giải phóng áp suất)
   playEarPop() {
     if (!this.enabled) return;
     this.init();
@@ -199,27 +199,40 @@ class SoundEngine {
     const ctx = this.audioCtx;
     const now = ctx.currentTime;
 
-    // Resonant air pop sound
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
+    // 1. Initial click / snap of Eustachian valve opening
+    const clickOsc = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    clickOsc.type = 'triangle';
+    clickOsc.frequency.setValueAtTime(1400, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(350, now + 0.025);
+    clickGain.gain.setValueAtTime(0.24, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    clickOsc.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.04);
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+    // 2. Resonant warm air pop (tiếng bóp/bụp tai)
+    const popOsc = ctx.createOscillator();
+    const popGain = ctx.createGain();
+    const popFilter = ctx.createBiquadFilter();
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(600, now);
+    popOsc.type = 'sine';
+    popOsc.frequency.setValueAtTime(380, now + 0.012);
+    popOsc.frequency.exponentialRampToValueAtTime(85, now + 0.11);
 
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    popFilter.type = 'lowpass';
+    popFilter.frequency.setValueAtTime(750, now);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
+    popGain.gain.setValueAtTime(0.3, now + 0.012);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
 
-    osc.start(now);
-    osc.stop(now + 0.14);
+    popOsc.connect(popFilter);
+    popFilter.connect(popGain);
+    popGain.connect(ctx.destination);
+
+    popOsc.start(now + 0.012);
+    popOsc.stop(now + 0.16);
   }
 
   // Gulp / Swallow sound simulation
