@@ -317,6 +317,9 @@ class EarSimulation {
         if (this.ringMeshes) this.ringMeshes.push(ringMesh);
       });
 
+      // 2b. Realistic 3D Pressure Force Arrows (Rigidly anchored in ear space)
+      this.initPressureArrows3D(earRoot);
+
       // Center ear assembly in viewport
       earRoot.position.set(0, 0, 0);
       this.modelGroup.add(earRoot);
@@ -718,6 +721,7 @@ class EarSimulation {
         if (part.pinMesh) part.pinMesh.visible = true;
         if (part.ringMesh) part.ringMesh.visible = true;
       });
+      if (this.pressureArrowGroup3D) this.pressureArrowGroup3D.visible = false;
     } else {
       if (tabAnat) {
         tabAnat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition";
@@ -740,6 +744,7 @@ class EarSimulation {
         if (part.pinMesh) part.pinMesh.visible = false;
         if (part.ringMesh) part.ringMesh.visible = false;
       });
+      if (this.pressureArrowGroup3D) this.pressureArrowGroup3D.visible = true;
 
       this.setFlightType(this.flightType || 'landing');
       this.setStage(1);
@@ -1356,7 +1361,161 @@ class EarSimulation {
     }
   }
 
-  // Pressure mode overlays (Airflow along curved Eustachian tube & pressure vectors)
+  // -------------------------------------------------------------
+  // REALISTIC 3D PRESSURE FORCE ARROWS (Anchored in 3D Ear Model Space)
+  // -------------------------------------------------------------
+  initPressureArrows3D(parentGroup) {
+    this.pressureArrowGroup3D = new THREE.Group();
+
+    const buildArrow = (colorHex, isOuter) => {
+      const group = new THREE.Group();
+
+      // Shaft: cylinder along X (radius 1, length 1)
+      const shaftGeo = new THREE.CylinderGeometry(1, 1, 1, 24);
+      const shaftMat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        emissive: colorHex,
+        emissiveIntensity: 0.60,
+        roughness: 0.30,
+        metalness: 0.15
+      });
+      const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
+      shaftMesh.rotation.z = -Math.PI / 2;
+      group.add(shaftMesh);
+
+      // Head: cone pointing along +X (radius 1, length 1)
+      const headGeo = new THREE.ConeGeometry(1, 1, 24);
+      const headMat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        emissive: colorHex,
+        emissiveIntensity: 0.70,
+        roughness: 0.25,
+        metalness: 0.15
+      });
+      const headMesh = new THREE.Mesh(headGeo, headMat);
+      headMesh.rotation.z = -Math.PI / 2;
+      group.add(headMesh);
+
+      // 2 Glowing Toruses along shaft
+      const chevrons = [];
+      for (let i = 0; i < 2; i++) {
+        const torGeo = new THREE.TorusGeometry(1, 0.22, 10, 24);
+        const torMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.92
+        });
+        const torMesh = new THREE.Mesh(torGeo, torMat);
+        torMesh.rotation.y = Math.PI / 2;
+        group.add(torMesh);
+        chevrons.push(torMesh);
+      }
+
+      group.userData = { shaftMesh, headMesh, chevrons, isOuter };
+      return group;
+    };
+
+    this.arrowOuter3D = buildArrow(0x0284c7, true);
+    this.pressureArrowGroup3D.add(this.arrowOuter3D);
+
+    this.arrowInner3D = buildArrow(0xef4444, false);
+    this.pressureArrowGroup3D.add(this.arrowInner3D);
+
+    this.lenOuter3D = 0.22;
+    this.lenInner3D = 0.22;
+
+    this.pressureArrowGroup3D.visible = (this.subMode === 'pressure');
+    parentGroup.add(this.pressureArrowGroup3D);
+  }
+
+  updatePressureArrows3D(now) {
+    if (!this.pressureArrowGroup3D || !this.arrowOuter3D || !this.arrowInner3D) return;
+    if (this.subMode !== 'pressure') {
+      this.pressureArrowGroup3D.visible = false;
+      return;
+    }
+    this.pressureArrowGroup3D.visible = true;
+
+    const isLanding = (this.flightType === 'landing');
+    const isBalanced = (this.stage === 1 || (this.stage === 4 && this.isEqualized));
+
+    let lenOuter, rOuter, hrOuter, hlOuter;
+    let lenInner, rInner, hrInner, hlInner;
+
+    if (isBalanced) {
+      lenOuter = 0.22;
+      rOuter = 0.015;
+      hrOuter = 0.034;
+      hlOuter = 0.065;
+
+      lenInner = 0.22;
+      rInner = 0.015;
+      hrInner = 0.034;
+      hlInner = 0.065;
+    } else if (isLanding) {
+      // Landing: outer is HIGH (101 kPa), inner is LOW (80 kPa)
+      lenOuter = 0.32;
+      rOuter = 0.024;
+      hrOuter = 0.048;
+      hlOuter = 0.085;
+
+      lenInner = 0.14;
+      rInner = 0.010;
+      hrInner = 0.022;
+      hlInner = 0.045;
+    } else {
+      // Takeoff: outer is LOW (80 kPa), inner is HIGH (101 kPa)
+      lenOuter = 0.14;
+      rOuter = 0.010;
+      hrOuter = 0.022;
+      hlOuter = 0.045;
+
+      lenInner = 0.32;
+      rInner = 0.024;
+      hrInner = 0.048;
+      hlInner = 0.085;
+    }
+
+    this.lenOuter3D = lenOuter;
+    this.lenInner3D = lenInner;
+
+    // Eardrum target center: recessed back in Z (0.18 instead of 0.34) and lowered Y (0.04 instead of 0.08)
+    const edCenterX = 0.19;
+    const edCenterY = 0.04;
+    const edCenterZ = 0.18;
+    const gap = 0.07; // khoảng cách an toàn trước màng nhĩ
+
+    const setArrowGeom = (group, tipPos, rotY, len, r, hr, hl) => {
+      const u = group.userData;
+      group.position.copy(tipPos);
+      group.rotation.set(0, rotY, 0);
+
+      const shaftLen = Math.max(0.01, len - hl);
+      u.shaftMesh.scale.set(r, shaftLen, r);
+      u.shaftMesh.position.set(-hl - shaftLen / 2, 0, 0);
+
+      u.headMesh.scale.set(hr, hl, hr);
+      u.headMesh.position.set(-hl / 2, 0, 0);
+
+      // Animate glowing rings (chevrons) sliding along shaft towards head
+      u.chevrons.forEach((tor, i) => {
+        tor.scale.set(r * 1.35, r * 1.35, r * 1.35);
+        const phase = (now * 1.1 + i * 0.5) % 1.0;
+        const xPos = -hl - (1.0 - phase) * shaftLen;
+        tor.position.set(xPos, 0, 0);
+      });
+    };
+
+    // Outer arrow points +X into eardrum (rotY = 0)
+    const tipOuter = new THREE.Vector3(edCenterX - gap, edCenterY, edCenterZ);
+    setArrowGeom(this.arrowOuter3D, tipOuter, 0, lenOuter, rOuter, hrOuter, hlOuter);
+
+    // Inner arrow points -X into eardrum (rotY = Math.PI)
+    const tipInner = new THREE.Vector3(edCenterX + gap, edCenterY, edCenterZ);
+    setArrowGeom(this.arrowInner3D, tipInner, Math.PI, lenInner, rInner, hrInner, hlInner);
+  }
+
+  // Pressure mode overlays (Airflow along curved Eustachian tube & Projected 3D HUD Badges)
   drawFlightPressureEffects(ctx, canvasRect) {
     const eardrum = EAR_PARTS.find(p => p.id === 3);
     const eustachian = EAR_PARTS.find(p => p.id === 7);
@@ -1394,127 +1553,42 @@ class EarSimulation {
       ctx.restore();
     }
 
-    // 2. Dual Pressure Arrows pointing into the Eardrum (Màng nhĩ)
-    const edX = eardrum.screenX;
-    const edY = eardrum.screenY;
+    // 2. Projected 3D HUD Badges tracking the 3D arrows rigidly
+    if (!this.arrowOuter3D || !this.arrowInner3D || !this.earRoot || !this.camera) return;
+
     const isLanding = (this.flightType === 'landing');
     const isBalanced = (this.stage === 1 || (this.stage === 4 && this.isEqualized));
 
-    let lenOuter, thickOuter, headW_Outer, headH_Outer;
-    let lenInner, thickInner, headW_Inner, headH_Inner;
+    // Outer arrow midpoint in world space
+    const outerMidWorld = new THREE.Vector3(-this.lenOuter3D * 0.5, 0, 0);
+    this.arrowOuter3D.localToWorld(outerMidWorld);
+    const pOuterCam = outerMidWorld.clone().project(this.camera);
 
-    if (isBalanced) {
-      // Giai đoạn cân bằng (Stage 1 hoặc Stage 4 sau khi ngáp/nuốt): 2 mũi tên bằng nhau hoàn toàn
-      lenOuter = 46;
-      thickOuter = 5.0;
-      headW_Outer = 15;
-      headH_Outer = 13;
+    // Inner arrow midpoint in world space
+    const innerMidWorld = new THREE.Vector3(-this.lenInner3D * 0.5, 0, 0);
+    this.arrowInner3D.localToWorld(innerMidWorld);
+    const pInnerCam = innerMidWorld.clone().project(this.camera);
 
-      lenInner = 46;
-      thickInner = 5.0;
-      headW_Inner = 15;
-      headH_Inner = 13;
-    } else if (isLanding) {
-      // Hạ cánh: áp suất khí quyển ngoài CAO (101 kPa), áp suất tai giữa THẤP (80 kPa)
-      // Mũi tên ngoài (bên trái) TO HƠN
-      lenOuter = 74;
-      thickOuter = 9.0;
-      headW_Outer = 22;
-      headH_Outer = 18;
+    // Eardrum center in world space (anchored at recessed Z: 0.18, and lowered Y: 0.04)
+    const edCenterWorld = new THREE.Vector3(0.19, 0.04, 0.18);
+    this.earRoot.localToWorld(edCenterWorld);
+    const pEdCam = edCenterWorld.clone().project(this.camera);
 
-      lenInner = 26;
-      thickInner = 3.5;
-      headW_Inner = 11;
-      headH_Inner = 9;
-    } else {
-      // Cất cánh: áp suất khí quyển ngoài THẤP (80 kPa), áp suất tai giữa CAO (101 kPa)
-      // Mũi tên trong (bên phải) TO HƠN
-      lenOuter = 26;
-      thickOuter = 3.5;
-      headW_Outer = 11;
-      headH_Outer = 9;
+    const w = canvasRect.width;
+    const h = canvasRect.height;
 
-      lenInner = 74;
-      thickInner = 9.0;
-      headW_Inner = 22;
-      headH_Inner = 18;
-    }
+    const sxOuter = (pOuterCam.x * 0.5 + 0.5) * w;
+    const syOuter = (-pOuterCam.y * 0.5 + 0.5) * h;
 
-    const now = performance.now() * 0.003;
-    const gap = 36; // Khoảng cách hai mũi tên cách xa nhau hơn theo yêu cầu
-    const arrowY = edY + 16; // Mũi tên dịch xuống 1 xíu theo yêu cầu
+    const sxInner = (pInnerCam.x * 0.5 + 0.5) * w;
+    const syInner = (-pInnerCam.y * 0.5 + 0.5) * h;
 
-    // Helper vẽ mũi tên áp suất có hiệu ứng dòng chảy bên trong
-    const drawPressureArrow = (startX, targetX, y, stemW, headW, headH, colorGradStart, colorGradEnd, shadowCol, isPointingRight, labelTitle, labelP, isHigh) => {
+    const sxEd = (pEdCam.x * 0.5 + 0.5) * w;
+    const syEd = (-pEdCam.y * 0.5 + 0.5) * h;
+
+    // Helper to draw clean pressure measurement badge
+    const drawBadge = (midX, midY, labelTitle, labelP, isHigh) => {
       ctx.save();
-      ctx.shadowColor = shadowCol;
-      ctx.shadowBlur = isHigh ? 12 : 5;
-      ctx.shadowOffsetY = 1;
-
-      const grad = ctx.createLinearGradient(startX, y, targetX, y);
-      grad.addColorStop(0, colorGradStart);
-      grad.addColorStop(1, colorGradEnd);
-
-      ctx.fillStyle = grad;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = isHigh ? 2.2 : 1.6;
-
-      ctx.beginPath();
-      if (isPointingRight) {
-        // Mũi tên hướng sang phải (áp suất ngoài đẩy vào màng nhĩ)
-        ctx.moveTo(startX, y - stemW / 2);
-        ctx.lineTo(targetX - headH, y - stemW / 2);
-        ctx.lineTo(targetX - headH, y - headW / 2);
-        ctx.lineTo(targetX, y);
-        ctx.lineTo(targetX - headH, y + headW / 2);
-        ctx.lineTo(targetX - headH, y + stemW / 2);
-        ctx.lineTo(startX, y + stemW / 2);
-      } else {
-        // Mũi tên hướng sang trái (áp suất trong tai giữa đẩy vào màng nhĩ)
-        ctx.moveTo(startX, y - stemW / 2);
-        ctx.lineTo(targetX + headH, y - stemW / 2);
-        ctx.lineTo(targetX + headH, y - headW / 2);
-        ctx.lineTo(targetX, y);
-        ctx.lineTo(targetX + headH, y + headW / 2);
-        ctx.lineTo(targetX + headH, y + stemW / 2);
-        ctx.lineTo(startX, y + stemW / 2);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Hiệu ứng chevron chuyển động chỉ hướng lực
-      if (isHigh || this.stage === 2 || this.stage === 3) {
-        ctx.shadowColor = 'transparent';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.lineWidth = isHigh ? 2.0 : 1.2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        const arrowLen = Math.abs(targetX - startX);
-        const phase = (now * 25) % 18;
-
-        for (let off = 10; off < arrowLen - headH; off += 18) {
-          const cx = isPointingRight ? (startX + off + phase) : (startX - off - phase);
-          if (isPointingRight && cx > startX + 4 && cx < targetX - headH - 2) {
-            ctx.beginPath();
-            ctx.moveTo(cx - 3, y - stemW * 0.4);
-            ctx.lineTo(cx + 2, y);
-            ctx.lineTo(cx - 3, y + stemW * 0.4);
-            ctx.stroke();
-          } else if (!isPointingRight && cx < startX - 4 && cx > targetX + headH + 2) {
-            ctx.beginPath();
-            ctx.moveTo(cx + 3, y - stemW * 0.4);
-            ctx.lineTo(cx - 2, y);
-            ctx.lineTo(cx + 3, y + stemW * 0.4);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Nhãn thông số áp suất phía trên mũi tên
-      ctx.shadowColor = 'transparent';
-      const midX = (startX + targetX) / 2;
       ctx.font = 'bold 9.5px "Be Vietnam Pro", sans-serif';
       const tw1 = ctx.measureText(labelTitle).width;
       ctx.font = 'bold 10.5px "JetBrains Mono", monospace';
@@ -1522,7 +1596,11 @@ class EarSimulation {
       const bW = Math.max(tw1, tw2) + 14;
       const bH = 28;
       const bX = midX - bW / 2;
-      const bY = y - headW / 2 - bH - 6;
+      const bY = midY - bH / 2;
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.10)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 1;
 
       ctx.fillStyle = isHigh ? 'rgba(254, 242, 242, 0.95)' : 'rgba(240, 249, 255, 0.95)';
       ctx.strokeStyle = isHigh ? '#f87171' : '#38bdf8';
@@ -1532,6 +1610,7 @@ class EarSimulation {
       ctx.fill();
       ctx.stroke();
 
+      ctx.shadowColor = 'transparent';
       ctx.textAlign = 'center';
       ctx.fillStyle = isHigh ? '#b91c1c' : '#0369a1';
       ctx.font = '600 9px "Be Vietnam Pro", sans-serif';
@@ -1540,97 +1619,82 @@ class EarSimulation {
       ctx.fillStyle = isHigh ? '#dc2626' : '#0284c7';
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillText(labelP, midX, bY + 23);
-
       ctx.restore();
     };
 
-    // Vẽ mũi tên ngoài (Ống tai bên trái)
-    const isOuterHigh = (!isBalanced && isLanding);
-    const outerTitle = "Ống tai (Ngoài)";
-    const outerP = `${this.pOuter} kPa${isOuterHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
-    drawPressureArrow(
-      edX - gap - lenOuter,
-      edX - gap,
-      arrowY,
-      thickOuter,
-      headW_Outer,
-      headH_Outer,
-      '#0284c7',
-      '#38bdf8',
-      'rgba(2, 132, 199, 0.35)',
-      true,
-      outerTitle,
-      outerP,
-      isOuterHigh
-    );
-
-    // Vẽ mũi tên trong (Tai giữa bên phải)
-    const isInnerHigh = (!isBalanced && !isLanding);
-    const innerTitle = "Tai giữa (Trong)";
-    const innerP = `${this.pInner} kPa${isInnerHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
-    drawPressureArrow(
-      edX + gap + lenInner,
-      edX + gap,
-      arrowY,
-      thickInner,
-      headW_Inner,
-      headH_Inner,
-      '#f97316',
-      '#ef4444',
-      'rgba(239, 68, 68, 0.35)',
-      false,
-      innerTitle,
-      innerP,
-      isInnerHigh
-    );
-
-    // Huy hiệu trạng thái màng nhĩ ở vị trí trung tâm dưới màng nhĩ
-    ctx.save();
-    ctx.textAlign = 'center';
-    let statusText = '';
-    let statusBg = '';
-    let statusBorder = '';
-    let statusColor = '';
-
-    if (isBalanced) {
-      statusText = "⚖️ Áp suất hai bên CÂN BẰNG (Màng nhĩ phẳng)";
-      statusBg = 'rgba(236, 253, 245, 0.96)';
-      statusBorder = '#34d399';
-      statusColor = '#065f46';
-    } else if (isLanding) {
-      statusText = "⚠️ P_ngoài > P_trong → Màng nhĩ bị ÉP LÕM VÀO TRONG";
-      statusBg = 'rgba(254, 242, 242, 0.96)';
-      statusBorder = '#f87171';
-      statusColor = '#991b1b';
-    } else {
-      statusText = "⚠️ P_trong > P_ngoài → Màng nhĩ bị ĐẨY PHỒNG RA NGOÀI";
-      statusBg = 'rgba(255, 251, 235, 0.96)';
-      statusBorder = '#fbbf24';
-      statusColor = '#92400e';
+    // Stagger badges vertically if they get too close in perspective
+    let bY_outer = syOuter - 28;
+    let bY_inner = syInner - 28;
+    if (Math.abs(sxOuter - sxInner) < 75) {
+      bY_outer -= 14;
+      bY_inner += 14;
     }
 
-    ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
-    const stW = ctx.measureText(statusText).width + 20;
-    const stH = 26;
-    const stX = edX - stW / 2;
-    const stY = arrowY + 34;
+    // Draw Outer Badge if in front of camera
+    if (pOuterCam.z <= 1.0) {
+      const isOuterHigh = (!isBalanced && isLanding);
+      const outerTitle = "Ống tai (Ngoài)";
+      const outerP = `${this.pOuter} kPa${isOuterHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
+      drawBadge(sxOuter, bY_outer, outerTitle, outerP, isOuterHigh);
+    }
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetY = 2;
+    // Draw Inner Badge if in front of camera
+    if (pInnerCam.z <= 1.0) {
+      const isInnerHigh = (!isBalanced && !isLanding);
+      const innerTitle = "Tai giữa (Trong)";
+      const innerP = `${this.pInner} kPa${isInnerHigh ? ' (CAO)' : (isBalanced ? '' : ' (THẤP)')}`;
+      drawBadge(sxInner, bY_inner, innerTitle, innerP, isInnerHigh);
+    }
 
-    ctx.fillStyle = statusBg;
-    ctx.strokeStyle = statusBorder;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.roundRect(stX, stY, stW, stH, 6);
-    ctx.fill();
-    ctx.stroke();
+    // Draw Eardrum State Card below eardrum if in front of camera
+    if (pEdCam.z <= 1.0) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      let statusText = '';
+      let statusBg = '';
+      let statusBorder = '';
+      let statusColor = '';
 
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = statusColor;
-    ctx.fillText(statusText, edX, stY + 17);
-    ctx.restore();
+      if (isBalanced) {
+        statusText = "⚖️ Áp suất hai bên CÂN BẰNG (Màng nhĩ phẳng)";
+        statusBg = 'rgba(236, 253, 245, 0.96)';
+        statusBorder = '#34d399';
+        statusColor = '#065f46';
+      } else if (isLanding) {
+        statusText = "⚠️ P_ngoài > P_trong → Màng nhĩ bị ÉP LÕM VÀO TRONG";
+        statusBg = 'rgba(254, 242, 242, 0.96)';
+        statusBorder = '#f87171';
+        statusColor = '#991b1b';
+      } else {
+        statusText = "⚠️ P_trong > P_ngoài → Màng nhĩ bị ĐẨY PHỒNG RA NGOÀI";
+        statusBg = 'rgba(255, 251, 235, 0.96)';
+        statusBorder = '#fbbf24';
+        statusColor = '#92400e';
+      }
+
+      ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
+      const stW = ctx.measureText(statusText).width + 20;
+      const stH = 26;
+      const stX = sxEd - stW / 2;
+      const stY = syEd + 36;
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 2;
+
+      ctx.fillStyle = statusBg;
+      ctx.strokeStyle = statusBorder;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(stX, stY, stW, stH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = statusColor;
+      ctx.fillText(statusText, sxEd, stY + 17);
+      ctx.restore();
+    }
   }
 
   // -------------------------------------------------------------
@@ -1706,6 +1770,13 @@ class EarSimulation {
           this.isAcousticPlaying = false;
           this.acousticProgress = 0;
         }
+      }
+
+      // 4b. Update 3D Pressure Force Arrows (anchored in 3D ear space)
+      if (this.subMode === 'pressure') {
+        this.updatePressureArrows3D(now * 0.003);
+      } else if (this.pressureArrowGroup3D) {
+        this.pressureArrowGroup3D.visible = false;
       }
 
       // 5. Render Three.js 3D WebGL Scene
