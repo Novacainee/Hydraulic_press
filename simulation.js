@@ -601,7 +601,12 @@ class HydraulicSimulation {
     // 10. Pressure Gauges
     this.drawPressureGauges(ctx, c1, c2, isApp);
 
-    // 11. Floating Weight if actively dragging
+    // 11. Directional Movement & Displacement Arrows beside Cylinders
+    if (!isApp) {
+      this.drawDisplacementArrows(ctx, c1, c2, yFluid1, yFluid2, yEquilibrium, scalePxlPerCm);
+    }
+
+    // 12. Floating Weight if actively dragging
     if (this.isDragging) {
       this.drawFloatingWeight(ctx, this.mousePos.x, this.mousePos.y);
     }
@@ -721,15 +726,202 @@ class HydraulicSimulation {
     ctx.lineWidth = 1.2;
 
     ctx.beginPath();
-    ctx.moveTo(c1.left - 8, yEquilibrium);
-    ctx.lineTo(c2.right + 8, yEquilibrium);
+    ctx.moveTo(c1.left - 16, yEquilibrium);
+    ctx.lineTo(c2.right + 16, yEquilibrium);
     ctx.stroke();
 
-    ctx.fillStyle = '#b45309';
+    // Center label in the gap between cylinder 1 and cylinder 2
+    const midX = (c1.right + c2.left) * 0.5;
     ctx.font = 'bold 10px "Be Vietnam Pro", sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('Vạch số 0 (Ban đầu)', c1.left - 12, yEquilibrium + 3);
+    const txt = 'Vạch số 0 (Ban đầu)';
+    const tw = ctx.measureText(txt).width;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(midX - tw / 2 - 4, yEquilibrium - 15, tw + 8, 14);
+
+    ctx.fillStyle = '#b45309';
+    ctx.textAlign = 'center';
+    ctx.fillText(txt, midX, yEquilibrium - 5);
     ctx.restore();
+  }
+
+  // Directional Movement Arrows when weights are placed on pistons
+  drawDisplacementArrows(ctx, c1, c2, yFluid1, yFluid2, yEquil, scalePxlPerCm) {
+    // Only display when weights are on pistons and displacement occurs
+    const hasWeights = (this.weights1 > 0 || this.weights2 > 0);
+    if (!hasWeights) return;
+    if (Math.abs(this.h1) < 0.04 && Math.abs(this.h2) < 0.04) return;
+
+    const items = [
+      {
+        c: c1,
+        x: c1.left - 18,
+        h: this.h1,
+        yFluid: yFluid1,
+        badgeSide: 'left',
+        id: 1,
+        name: 'h₁'
+      },
+      {
+        c: c2,
+        x: c2.right + (this.showRuler ? 28 : 18),
+        h: this.h2,
+        yFluid: yFluid2,
+        badgeSide: 'right',
+        id: 2,
+        name: 'h₂'
+      }
+    ];
+
+    const now = performance.now() * 0.003;
+
+    items.forEach(it => {
+      const isDown = it.h > 0;
+      const dispCm = Math.abs(it.h).toFixed(1);
+
+      let startY = yEquil;
+      let endY = it.yFluid;
+      const minArrowLen = 42;
+      if (Math.abs(endY - startY) < minArrowLen) {
+        endY = isDown ? startY + minArrowLen : startY - minArrowLen;
+      }
+
+      const headH = 15;
+      const headW = 18;
+      const stemW = 8;
+
+      ctx.save();
+      ctx.shadowColor = isDown ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 1;
+
+      const topY = Math.min(startY, endY);
+      const botY = Math.max(startY, endY);
+      const grad = ctx.createLinearGradient(0, topY, 0, botY);
+      if (isDown) {
+        grad.addColorStop(0, '#ea580c');
+        grad.addColorStop(0.5, '#dc2626');
+        grad.addColorStop(1, '#b91c1c');
+      } else {
+        grad.addColorStop(0, '#047857');
+        grad.addColorStop(0.5, '#059669');
+        grad.addColorStop(1, '#0284c7');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      if (isDown) {
+        ctx.moveTo(it.x - stemW / 2, startY);
+        ctx.lineTo(it.x + stemW / 2, startY);
+        ctx.lineTo(it.x + stemW / 2, endY - headH);
+        ctx.lineTo(it.x + headW / 2, endY - headH);
+        ctx.lineTo(it.x, endY);
+        ctx.lineTo(it.x - headW / 2, endY - headH);
+        ctx.lineTo(it.x - stemW / 2, endY - headH);
+      } else {
+        ctx.moveTo(it.x, endY);
+        ctx.lineTo(it.x + headW / 2, endY + headH);
+        ctx.lineTo(it.x + stemW / 2, endY + headH);
+        ctx.lineTo(it.x + stemW / 2, startY);
+        ctx.lineTo(it.x - stemW / 2, startY);
+        ctx.lineTo(it.x - stemW / 2, endY + headH);
+        ctx.lineTo(it.x - headW / 2, endY + headH);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Inner moving chevrons to emphasize continuous direction of flow/motion
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const arrowLen = Math.abs(endY - startY);
+      const chevronDist = 16;
+      const numChevrons = Math.floor((arrowLen - headH) / chevronDist);
+
+      for (let i = 0; i < numChevrons; i++) {
+        const phase = ((i * chevronDist + (isDown ? (now * 25) % chevronDist : (-now * 25) % chevronDist) + chevronDist) % (arrowLen - headH)) + (isDown ? 6 : headH + 4);
+        const cy = isDown ? startY + phase : endY + phase;
+
+        if (cy > topY + 4 && cy < botY - 4) {
+          ctx.beginPath();
+          if (isDown) {
+            ctx.moveTo(it.x - 3.5, cy - 3);
+            ctx.lineTo(it.x, cy + 2);
+            ctx.lineTo(it.x + 3.5, cy - 3);
+          } else {
+            ctx.moveTo(it.x - 3.5, cy + 3);
+            ctx.lineTo(it.x, cy - 2);
+            ctx.lineTo(it.x + 3.5, cy + 3);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // Guide ticks connecting to cylinder
+      ctx.setLineDash([3, 2]);
+      ctx.strokeStyle = isDown ? '#f87171' : '#34d399';
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.moveTo(it.id === 1 ? it.c.left : it.c.right + (this.showRuler ? 20 : 0), yEquil);
+      ctx.lineTo(it.x, yEquil);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(it.id === 1 ? it.c.left : it.c.right + (this.showRuler ? 20 : 0), it.yFluid);
+      ctx.lineTo(it.x, it.yFluid);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+
+      // Label Badge
+      const midY = (startY + endY) / 2;
+      const labelText = isDown ? 'Đi xuống' : 'Đi lên';
+      const valueText = `${isDown ? '-' : '+'}${dispCm} cm`;
+
+      ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
+      const tw1 = ctx.measureText(labelText).width;
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      const tw2 = ctx.measureText(valueText).width;
+      const tw = Math.max(tw1, tw2);
+
+      const badgeW = tw + 16;
+      const badgeH = 32;
+      const badgeX = it.badgeSide === 'right' ? it.x + 14 : it.x - badgeW - 14;
+      const badgeY = midY - badgeH / 2;
+
+      ctx.shadowColor = isDown ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 2;
+
+      ctx.fillStyle = isDown ? 'rgba(254, 242, 242, 0.96)' : 'rgba(236, 253, 245, 0.96)';
+      ctx.strokeStyle = isDown ? '#f87171' : '#34d399';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+      ctx.textAlign = 'left';
+
+      ctx.fillStyle = isDown ? '#b91c1c' : '#047857';
+      ctx.font = 'bold 10.5px "Be Vietnam Pro", sans-serif';
+      ctx.fillText(labelText, badgeX + 8, badgeY + 13);
+
+      ctx.fillStyle = isDown ? '#dc2626' : '#059669';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillText(valueText, badgeX + 8, badgeY + 26);
+
+      ctx.restore();
+    });
   }
 
   // Draw Liquid Fluid (Sky Cyan or Amber Oil)
