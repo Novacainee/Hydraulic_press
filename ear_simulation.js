@@ -1334,21 +1334,28 @@ class EarSimulation {
   // -------------------------------------------------------------
   initPressureArrows3D(parentGroup) {
     this.pressureArrowGroup3D = new THREE.Group();
+    this.pressureArrowGroup3D.renderOrder = 9990;
 
     const buildArrow = (colorHex, isOuter) => {
       const group = new THREE.Group();
+      group.renderOrder = 9990;
 
       // Shaft: cylinder along X (radius 1, length 1)
       const shaftGeo = new THREE.CylinderGeometry(1, 1, 1, 24);
       const shaftMat = new THREE.MeshStandardMaterial({
         color: colorHex,
         emissive: colorHex,
-        emissiveIntensity: 0.60,
-        roughness: 0.30,
-        metalness: 0.15
+        emissiveIntensity: 0.85,
+        roughness: 0.20,
+        metalness: 0.10,
+        transparent: true,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false
       });
       const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
       shaftMesh.rotation.z = -Math.PI / 2;
+      shaftMesh.renderOrder = 9991;
       group.add(shaftMesh);
 
       // Head: cone pointing along +X (radius 1, length 1)
@@ -1356,12 +1363,17 @@ class EarSimulation {
       const headMat = new THREE.MeshStandardMaterial({
         color: colorHex,
         emissive: colorHex,
-        emissiveIntensity: 0.70,
-        roughness: 0.25,
-        metalness: 0.15
+        emissiveIntensity: 0.90,
+        roughness: 0.20,
+        metalness: 0.10,
+        transparent: true,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false
       });
       const headMesh = new THREE.Mesh(headGeo, headMat);
       headMesh.rotation.z = -Math.PI / 2;
+      headMesh.renderOrder = 9992;
       group.add(headMesh);
 
       // 2 Glowing Toruses along shaft
@@ -1371,10 +1383,13 @@ class EarSimulation {
         const torMat = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           transparent: true,
-          opacity: 0.92
+          opacity: 0.95,
+          depthTest: false,
+          depthWrite: false
         });
         const torMesh = new THREE.Mesh(torGeo, torMat);
         torMesh.rotation.y = Math.PI / 2;
+        torMesh.renderOrder = 9993 + i;
         group.add(torMesh);
         chevrons.push(torMesh);
       }
@@ -1403,6 +1418,32 @@ class EarSimulation {
       return;
     }
     this.pressureArrowGroup3D.visible = true;
+
+    // Luôn giữ thứ tự hiển thị: mũi tên gần camera hơn sẽ hiển thị đè lên mũi tên xa hơn
+    if (this.camera) {
+      const pOuterWorld = new THREE.Vector3();
+      this.arrowOuter3D.getWorldPosition(pOuterWorld);
+      const dOuter = pOuterWorld.distanceTo(this.camera.position);
+
+      const pInnerWorld = new THREE.Vector3();
+      this.arrowInner3D.getWorldPosition(pInnerWorld);
+      const dInner = pInnerWorld.distanceTo(this.camera.position);
+
+      const baseOuter = (dOuter > dInner) ? 9990 : 9995;
+      const baseInner = (dInner >= dOuter) ? 9990 : 9995;
+
+      this.arrowOuter3D.renderOrder = baseOuter;
+      const uO = this.arrowOuter3D.userData;
+      if (uO && uO.shaftMesh) uO.shaftMesh.renderOrder = baseOuter + 1;
+      if (uO && uO.headMesh) uO.headMesh.renderOrder = baseOuter + 2;
+      if (uO && uO.chevrons) uO.chevrons.forEach((c, idx) => c.renderOrder = baseOuter + 3 + idx);
+
+      this.arrowInner3D.renderOrder = baseInner;
+      const uI = this.arrowInner3D.userData;
+      if (uI && uI.shaftMesh) uI.shaftMesh.renderOrder = baseInner + 1;
+      if (uI && uI.headMesh) uI.headMesh.renderOrder = baseInner + 2;
+      if (uI && uI.chevrons) uI.chevrons.forEach((c, idx) => c.renderOrder = baseInner + 3 + idx);
+    }
 
     // Helper tính kích thước mũi tên động theo độ lớn áp suất (70 - 105 kPa)
     const getArrowDims = (p) => {
@@ -1563,12 +1604,12 @@ class EarSimulation {
       ctx.restore();
     };
 
-    // Stagger badges vertically if they get too close in perspective
-    let bY_outer = syOuter - 28;
-    let bY_inner = syInner - 28;
-    if (Math.abs(sxOuter - sxInner) < 75) {
-      bY_outer -= 14;
-      bY_inner += 14;
+    // Stagger badges vertically if they get too close in perspective, positioned cleanly above arrows
+    let bY_outer = syOuter - 45;
+    let bY_inner = syInner - 45;
+    if (Math.abs(sxOuter - sxInner) < 95) {
+      bY_outer -= 24;
+      bY_inner -= 4;
     }
 
     // Draw Outer Badge if in front of camera
